@@ -189,11 +189,10 @@ export const HUB_PAGES = new Set([
   'Category (Wikipedia)',
 ])
 
+// Derived lowercase set for O(1) hub page lookups
+const HUB_PAGES_LOWER = new Set(Array.from(HUB_PAGES).map(h => h.toLowerCase()))
+
 export function isHubPage(title) {
   if (!title || typeof title !== 'string') return false
-  const normalized = title.trim().toLowerCase()
-  for (const hub of HUB_PAGES) {
-    if (hub.toLowerCase() === normalized) return true
-  }
-  return false
+  return HUB_PAGES_LOWER.has(title.trim().toLowerCase())
 }
