@@ -92,3 +92,35 @@ describe('game state', () => {
     expect(result).toBeNull()
   })
 })
+
+describe('hardcore mode', () => {
+  it('starts with 0 undo tokens when hardcore=true', () => {
+    const gameId = createGame({
+      target: 'Adolf Hitler',
+      mode: 'classic',
+      hardcore: true,
+      playerId: 'p1',
+      playerName: 'Test',
+      startPage: 'Coffee',
+      cleanHtml: '<p>test</p>',
+      validLinks: [],
+    })
+    const player = getPlayer(gameId, 'p1')
+    expect(player.undoTokens).toBe(0)
+  })
+
+  it('starts with 3 undo tokens when hardcore=false', () => {
+    const gameId = createGame({
+      target: 'Jesus',
+      mode: 'classic',
+      hardcore: false,
+      playerId: 'p2',
+      playerName: 'Test2',
+      startPage: 'Coffee',
+      cleanHtml: '<p>test</p>',
+      validLinks: [],
+    })
+    const player = getPlayer(gameId, 'p2')
+    expect(player.undoTokens).toBe(3)
+  })
+})
