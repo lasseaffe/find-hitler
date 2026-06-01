@@ -40,8 +40,8 @@ export async function GET() {
     playedAt: m.playedAt.toISOString(),
   }))
 
-  const totalMatches = matches.length
-  const wins = matches.filter(m => m.won).length
+  const totalMatches = await prisma.match.count({ where: { userId: session.user.id } })
+  const wins = await prisma.match.count({ where: { userId: session.user.id, won: true } })
 
   return NextResponse.json({
     user,
