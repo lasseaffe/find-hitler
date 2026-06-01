@@ -62,7 +62,15 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white flex flex-col items-center justify-center px-4 py-12">
+    <div className="relative min-h-screen bg-[#0d1117] text-white flex flex-col items-center justify-center px-4 py-12">
+      <div className="absolute top-4 right-4">
+        <a
+          href="/leaderboard"
+          className="text-yellow-400/70 hover:text-yellow-400 font-mono text-xs uppercase tracking-widest transition-colors"
+        >
+          Leaderboard →
+        </a>
+      </div>
       <div className="text-center mb-10">
         <h1 className="text-6xl font-black text-yellow-400 tracking-tighter mb-2">FIND HITLER</h1>
         <p className="text-gray-400 font-mono text-sm tracking-widest uppercase">WikiRace · Taboo Edition</p>
