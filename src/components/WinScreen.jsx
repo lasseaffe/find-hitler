@@ -10,7 +10,7 @@ const PAR_COLORS = {
   'Double Bogey': 'text-red-400',
 }
 
-export default function WinScreen({ score, clicks, time, target, mode, parGrade, parDelta, timeUp, onPlayAgain }) {
+export default function WinScreen({ score, clicks, time, target, mode, parGrade, parDelta, timeUp, onPlayAgain, onViewResults }) {
   const isGolf = mode === 'golf'
   const isJesus = mode === 'jesus'
 
@@ -51,6 +51,14 @@ export default function WinScreen({ score, clicks, time, target, mode, parGrade,
         >
           Play Again
         </button>
+        {onViewResults && !timeUp && (
+          <button
+            onClick={onViewResults}
+            className="w-full mt-2 py-2 bg-transparent border border-yellow-400/40 hover:border-yellow-400 text-yellow-400 font-black rounded-xl uppercase tracking-widest text-sm transition-colors"
+          >
+            View Node Graph →
+          </button>
+        )}
       </div>
     </div>
   )

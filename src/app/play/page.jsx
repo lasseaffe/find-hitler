@@ -1,12 +1,15 @@
 'use client'
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import WikiArticle from '@/components/WikiArticle'
 import GameHUD from '@/components/GameHUD'
 import WinScreen from '@/components/WinScreen'
+import { addEntry } from '@/lib/leaderboard'
 
 function PlayGame() {
   const router = useRouter()
+
+  const playerNameRef = useRef('You')
 
   const [gameState, setGameState] = useState(null)
   const [html, setHtml] = useState('')
@@ -22,6 +25,7 @@ function PlayGame() {
     if (!raw) { router.push('/'); return }
     const init = JSON.parse(raw)
     sessionStorage.removeItem('gameInit')
+    playerNameRef.current = init.playerName || 'You'
     setGameState({
       gameId: init.gameId,
       playerId: init.playerId,
@@ -70,6 +74,29 @@ function PlayGame() {
 
       setClicks(data.clicks)
       if (data.status === 'WIN') {
+        const playerName = playerNameRef.current
+        const finisher = {
+          name: playerName,
+          path: data.path || [],
+          clicks: data.clicks,
+          time: data.time,
+          score: data.score,
+          isMe: true,
+          isBot: false,
+        }
+        sessionStorage.setItem('gameResults', JSON.stringify({
+          target: gameState.target,
+          mode: gameState.mode,
+          finishers: [finisher],
+        }))
+        addEntry({
+          mode: gameState.mode,
+          target: gameState.target,
+          clicks: data.clicks,
+          time: data.time,
+          score: data.score,
+          playerName,
+        })
         setWin({
           score: data.score,
           clicks: data.clicks,
@@ -156,6 +183,7 @@ function PlayGame() {
           parDelta={win.parDelta}
           timeUp={win.timeUp}
           onPlayAgain={() => router.push('/')}
+          onViewResults={() => router.push('/results')}
         />
       )}
     </div>
