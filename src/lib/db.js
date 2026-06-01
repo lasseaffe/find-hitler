@@ -4,4 +4,6 @@ const globalForPrisma = globalThis
 
 export const prisma =
   globalForPrisma.prisma ??
-  (globalForPrisma.prisma = new PrismaClient())
+  (globalForPrisma.prisma = new PrismaClient({
+    datasources: { db: { url: process.env.DATABASE_URL } },
+  }))
