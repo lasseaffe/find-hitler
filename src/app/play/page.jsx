@@ -5,12 +5,14 @@ import WikiArticle from '@/components/WikiArticle'
 import GameHUD from '@/components/GameHUD'
 import WinReveal from '@/components/win/WinReveal'
 import { RedButton } from '@/components/ui/primitives'
+import WikiSidebar from '@/components/WikiSidebar'
 import { addEntry } from '@/lib/leaderboard'
 import { markDailyPlayed } from '@/lib/dailyChallenge'
 
 function PlayGame() {
   const router = useRouter()
   const playerNameRef = useRef('You')
+  const initializedRef = useRef(false)
 
   const [gameState, setGameState] = useState(null)
   const [html, setHtml] = useState('')
@@ -22,6 +24,12 @@ function PlayGame() {
   const [jesusRound, setJesusRound] = useState(null)
 
   useEffect(() => {
+    // Guard against React Strict Mode double-invoke: only initialize once.
+    // Without this, the first run removes gameInit from sessionStorage and the
+    // second run finds nothing and redirects back to home.
+    if (initializedRef.current) return
+    initializedRef.current = true
+
     const raw = sessionStorage.getItem('gameInit')
     if (!raw) { router.push('/'); return }
     const init = JSON.parse(raw)
@@ -152,12 +160,16 @@ function PlayGame() {
 
   return (
     <div className="min-h-screen bg-paper">
-      {isLoading && <div className="fixed inset-x-0 top-0 z-50 h-1 bg-red" />}
-
-      {bounceMessage && (
-        <div className="fixed left-1/2 top-24 z-50 -translate-x-1/2 border-[3px] border-red bg-ink px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-paper">
-          ⛔ {bounceMessage}
-        </div>
+      {isLoading && (
+        <div
+          className="fixed inset-x-0 top-0 z-50"
+          style={{
+            height: 3,
+            background: 'linear-gradient(90deg, #e5241e 0%, #fbbf24 50%, #e5241e 100%)',
+            backgroundSize: '200%',
+            animation: 'shimmer 1s linear infinite',
+          }}
+        />
       )}
 
       <GameHUD
@@ -172,9 +184,26 @@ function PlayGame() {
         onTimeUp={handleTimeUp}
       />
 
-      <main className="mx-auto max-w-3xl px-5 pt-24 pb-24 sm:pt-20">
-        <WikiArticle html={html} onNavigate={handleNavigate} disabled={isLoading || !!win} />
-      </main>
+      <div className="flex" style={{ paddingTop: 52, paddingBottom: 52, minHeight: '100vh', background: '#fff' }}>
+        <WikiSidebar className="hidden sm:block" />
+        <main className="flex-1 min-w-0 px-4 py-3" style={{ maxWidth: 780 }}>
+          {bounceMessage && (
+            <div
+              className="mb-3 font-mono uppercase tracking-wide text-center"
+              style={{
+                border: '2px solid #e5241e',
+                background: '#0e0e0e',
+                color: '#f5f0e8',
+                padding: '6px 16px',
+                fontSize: 9,
+              }}
+            >
+              ⛔ {bounceMessage}
+            </div>
+          )}
+          <WikiArticle html={html} onNavigate={handleNavigate} disabled={isLoading || !!win} />
+        </main>
+      </div>
     </div>
   )
 }

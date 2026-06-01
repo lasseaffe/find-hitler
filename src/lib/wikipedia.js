@@ -13,9 +13,16 @@ export async function fetchAndSanitizeWiki(pageTitle) {
   // (not wrapped in #mw-content-text like the full page HTML)
   const body = $('.mw-parser-output').first()
 
-  // Strip Wikipedia UI elements that could be used for navigation or cheating
-  body.find('.navbox, .infobox, .reflist, .reference, #mw-navigation, .sistersitebox, .ambox, .hatnote').remove()
-  body.find('sup.reference').remove()
+  // Strip navigation/cheat elements. Keep: hatnotes (authentic), infobox (authentic), reflist (authentic but dimmed via CSS).
+  body.find('.navbox, .navbox-inner, .navbox-subgroup, #mw-navigation, .sistersitebox, .vertical-navbox').remove()
+  // Remove [edit] section links
+  body.find('.mw-editsection').remove()
+  // Remove navbox "v t e" abbreviation remnants
+  body.find('.navbar').remove()
+  // Remove reference superscripts in body text (clutter without footnote targets)
+  body.find('sup.reference, sup.noprint').remove()
+  // Remove coordinates, geo spans, maintenance tags
+  body.find('.geo-nondefault, .geo-multi-punct, .noprint, .mw-empty-elt').remove()
 
   const validLinks = new Set()
 

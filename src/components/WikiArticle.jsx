@@ -38,8 +38,8 @@ export default function WikiArticle({ html, onNavigate, disabled }) {
     <div ref={containerRef}>
       <div
         className="wiki prose prose-neutral max-w-none font-serif text-ink
-                   prose-headings:font-display prose-headings:uppercase prose-headings:text-ink
-                   prose-a:text-ink text-base sm:text-lg leading-relaxed"
+                   prose-headings:text-ink
+                   text-base sm:text-lg leading-relaxed"
         onClick={handleClick}
         dangerouslySetInnerHTML={{ __html: safeHtml }}
       />
