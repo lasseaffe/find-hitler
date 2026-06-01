@@ -143,9 +143,15 @@ export function setupSocketHandlers(io) {
         }
       }
 
+      const disconnectingPlayer = room?.players?.get(socket.id)
+      const disconnectName = disconnectingPlayer?.name || 'A player'
+
       removePlayer(roomCode, socket.id)
       const updatedRoom = getRoom(roomCode)
-      if (updatedRoom) io.to(roomCode).emit('room:state', roomSnapshot(roomCode))
+      if (updatedRoom) {
+        io.to(roomCode).emit('room:state', roomSnapshot(roomCode))
+        io.to(roomCode).emit('chat:event', { text: `${disconnectName} disconnected`, isWin: false })
+      }
     })
 
     // --- RANKED: JOIN QUEUE ---
@@ -166,6 +172,40 @@ export function setupSocketHandlers(io) {
     socket.on('ranked:leave', () => {
       leaveQueue(socket.id)
       socket.emit('ranked:left', {})
+    })
+
+    // --- CHAT: TEXT MESSAGE ---
+    socket.on('chat:message', ({ roomCode, text }) => {
+      const room = getRoom(roomCode)
+      if (!room) return
+      const player = room.players.get(socket.id)
+      if (!player) return
+      const safe = String(text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 120)
+      if (!safe.trim()) return
+      io.to(roomCode).emit('chat:message', { name: player.name, text: safe })
+    })
+
+    // --- CHAT: EMOTE ---
+    socket.on('chat:emote', ({ roomCode, emote }) => {
+      const room = getRoom(roomCode)
+      if (!room) return
+      const player = room.players.get(socket.id)
+      if (!player) return
+      const ALLOWED = new Set(['💀','🔥','😭','👏','⚡','🤡'])
+      if (!ALLOWED.has(emote)) return
+      io.to(roomCode).emit('chat:emote', { name: player.name, emote })
+    })
+
+    // --- CHAT: LAST UNDO EVENT ---
+    socket.on('chat:last-undo', ({ roomCode }) => {
+      const room = getRoom(roomCode)
+      if (!room) return
+      const player = room.players.get(socket.id)
+      if (!player) return
+      io.to(roomCode).emit('chat:event', {
+        text: `${player.name} used their last undo`,
+        isWin: false,
+      })
     })
 
     // --- RANKED: DUEL MOVE ---
@@ -231,6 +271,11 @@ async function processMoveForPlayer({ io, roomCode, gameId, room, playerId, targ
       score,
       path: [...updated.history.map(h => h.page), title],
       isBot: roomPlayer?.isBot || false,
+    })
+
+    io.to(roomCode).emit('chat:event', {
+      text: `${roomPlayer?.name || 'Someone'} found ${game.target} — ${updated.clicks} clicks · ${Math.floor((Date.now() - room.startTime) / 1000)}s 🏆`,
+      isWin: true,
     })
 
     if (!roomPlayer?.isBot) {

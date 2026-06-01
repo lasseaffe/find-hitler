@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import WikiArticle from '@/components/WikiArticle'
 import GameHUD from '@/components/GameHUD'
 import LiveFeed from '@/components/LiveFeed'
+import LobbyChat from '@/components/LobbyChat'
 import MultiWinScreen from '@/components/MultiWinScreen'
 import { useSocket } from '@/hooks/useSocket'
 import { addEntry } from '@/lib/leaderboard'
@@ -90,6 +91,9 @@ function MultiGame() {
       setHtml(data.html)
       setClicks(data.clicks)
       setUndoTokens(data.undoTokens)
+      if (data.undoTokens === 0) {
+        socketRef.current?.emit('chat:last-undo', { roomCode: gameState.roomCode })
+      }
     } catch { /* ignore */ } finally {
       setIsLoading(false)
     }
@@ -169,8 +173,13 @@ function MultiGame() {
       </div>
 
       {/* desktop right rail; hidden on mobile (v1 — mobile drawer is a follow-up) */}
-      <div className="fixed right-0 top-0 z-30 hidden h-full lg:block">
-        <LiveFeed players={players} myId={myIdRef.current} />
+      <div className="fixed right-0 top-0 z-30 hidden h-full lg:flex flex-col">
+        <LiveFeed players={players} myId={myIdRef.current} compact />
+        <LobbyChat
+          socket={socketRef.current}
+          roomCode={gameState?.roomCode}
+          playerCount={players.length}
+        />
       </div>
 
       {myFinish && (
