@@ -35,7 +35,7 @@ export default function GameHUD({ startPage, target, mode, clicks, undoTokens, o
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-40 pt-safe" style={{ background: '#0e0e0e', borderBottom: '3px solid #e5241e' }}>
+      <header className="fixed inset-x-0 top-0 z-40 pt-safe" style={{ background: '#0e0e0e', borderBottom: '3px solid #2563eb' }}>
         <div className="flex items-stretch" style={{ minHeight: 80 }}>
 
           {/* LEFT: Clicks */}
@@ -47,7 +47,7 @@ export default function GameHUD({ startPage, target, mode, clicks, undoTokens, o
           {/* CENTRE: Target */}
           <div className="flex flex-col items-center justify-center gap-1.5 flex-1" style={{ padding: '10px 24px', borderRight: '1px solid #1e1e1e' }}>
             <span style={{ color: '#666', fontSize: 9, fontFamily: 'ui-monospace,monospace', textTransform: 'uppercase', letterSpacing: '0.16em' }}>Target</span>
-            <span style={{ background: '#e5241e', color: '#fff', fontSize: 24, fontWeight: 700, padding: '3px 16px', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'ui-monospace,monospace' }}>{target}</span>
+            <span style={{ background: '#2563eb', color: '#fff', fontSize: 24, fontWeight: 700, padding: '3px 16px', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'ui-monospace,monospace' }}>{target}</span>
             <span style={{ color: '#888', fontSize: 13, letterSpacing: '0.04em', fontFamily: 'ui-monospace,monospace', textAlign: 'center' }}>Navigate Wikipedia links to find him</span>
           </div>
 
@@ -95,12 +95,12 @@ export default function GameHUD({ startPage, target, mode, clicks, undoTokens, o
       </header>
 
       {/* Bottom action bar */}
-      <footer className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 px-3 pb-safe" style={{ background: '#0e0e0e', borderTop: '3px solid #e5241e', minHeight: 48 }}>
+      <footer className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 px-3 pb-safe" style={{ background: '#0e0e0e', borderTop: '3px solid #2563eb', minHeight: 48 }}>
         <button
           onClick={onUndo}
           disabled={undoTokens === 0}
           style={{
-            background: undoTokens === 0 ? '#252525' : '#e5241e', color: undoTokens === 0 ? '#3a3a3a' : '#fff',
+            background: undoTokens === 0 ? '#252525' : '#2563eb', color: undoTokens === 0 ? '#3a3a3a' : '#fff',
             border: 'none', fontFamily: 'ui-monospace,monospace', fontSize: 8.5, fontWeight: 700,
             padding: '5px 14px', textTransform: 'uppercase', letterSpacing: '0.1em',
             cursor: undoTokens === 0 ? 'not-allowed' : 'pointer', flexShrink: 0,
