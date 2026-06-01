@@ -5,6 +5,7 @@ import WikiArticle from '@/components/WikiArticle'
 import GameHUD from '@/components/GameHUD'
 import WinScreen from '@/components/WinScreen'
 import { addEntry } from '@/lib/leaderboard'
+import { markDailyPlayed } from '@/lib/dailyChallenge'
 
 function PlayGame() {
   const router = useRouter()
@@ -74,6 +75,9 @@ function PlayGame() {
 
       setClicks(data.clicks)
       if (data.status === 'WIN') {
+        if (gameState.mode === 'daily') {
+          markDailyPlayed()
+        }
         const playerName = playerNameRef.current
         const finisher = {
           name: playerName,

@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { hasPlayedDailyToday } from '@/lib/dailyChallenge'
 
 const TARGETS = [
   { label: 'Adolf Hitler', category: 'Historical' },
@@ -34,6 +35,7 @@ export default function HomePage() {
   const [error, setError] = useState('')
 
   const targetLocked = mode === 'jesus' || mode === 'daily'
+  const alreadyPlayedDaily = mode === 'daily' && hasPlayedDailyToday()
 
   const handleStart = async () => {
     if (!playerName.trim()) { setError('Enter your name to continue'); return }
@@ -63,7 +65,13 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen bg-[#0d1117] text-white flex flex-col items-center justify-center px-4 py-12">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-4">
+        <a
+          href="/ranked"
+          className="text-red-400/70 hover:text-red-400 font-mono text-xs uppercase tracking-widest transition-colors"
+        >
+          ⚔ Ranked
+        </a>
         <a
           href="/leaderboard"
           className="text-yellow-400/70 hover:text-yellow-400 font-mono text-xs uppercase tracking-widest transition-colors"
@@ -185,13 +193,20 @@ export default function HomePage() {
 
         <button
           onClick={handleStart}
-          disabled={loading}
+          disabled={loading || alreadyPlayedDaily}
           className="w-full py-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-black text-lg rounded-xl uppercase tracking-widest transition-colors shadow-[0_0_30px_rgba(192,57,43,0.4)]"
         >
           {loading
             ? 'Connecting...'
+            : alreadyPlayedDaily
+            ? 'Already played today ✓'
             : playType === 'solo' ? 'Start Race →' : 'Create Lobby →'}
         </button>
+        {alreadyPlayedDaily && (
+          <p className="text-yellow-400/70 font-mono text-xs text-center">
+            Come back tomorrow for a new challenge.
+          </p>
+        )}
       </div>
     </div>
   )
