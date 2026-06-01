@@ -1,6 +1,6 @@
 'use client'
 
-export default function MultiWinScreen({ finishers, myId, target, onPlayAgain }) {
+export default function MultiWinScreen({ finishers, myId, target, onPlayAgain, onViewResults }) {
   return (
     <div className="fixed inset-0 bg-black/80 z-[200] flex items-center justify-center">
       <div className="bg-[#1a1a2e] border-2 border-yellow-400 rounded-2xl p-8 text-center max-w-md w-full shadow-[0_0_40px_rgba(241,196,15,0.25)]">
@@ -31,6 +31,14 @@ export default function MultiWinScreen({ finishers, myId, target, onPlayAgain })
         >
           Play Again
         </button>
+        {onViewResults && (
+          <button
+            onClick={onViewResults}
+            className="w-full mt-2 py-2 bg-transparent border border-yellow-400/40 hover:border-yellow-400 text-yellow-400 font-black rounded-lg uppercase tracking-wide text-sm transition-colors"
+          >
+            View Results →
+          </button>
+        )}
       </div>
     </div>
   )

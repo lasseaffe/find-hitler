@@ -6,6 +6,7 @@ import GameHUD from '@/components/GameHUD'
 import LiveFeed from '@/components/LiveFeed'
 import MultiWinScreen from '@/components/MultiWinScreen'
 import { useSocket } from '@/hooks/useSocket'
+import { addEntry } from '@/lib/leaderboard'
 
 function MultiGame() {
   const router = useRouter()
@@ -91,6 +92,37 @@ function MultiGame() {
     }
   }, [gameState, isLoading, myFinish])
 
+  const handleViewResults = useCallback(() => {
+    const mapped = finishers.map((f) => ({
+      name: f.name,
+      path: f.path || [],
+      clicks: f.clicks,
+      time: f.seconds ?? null,
+      score: f.score ?? null,
+      isMe: f.playerId === myIdRef.current,
+      isBot: f.isBot || false,
+    }))
+
+    mapped.filter(f => f.isMe).forEach(f => {
+      addEntry({
+        mode: gameState.mode,
+        target: gameState.target,
+        clicks: f.clicks,
+        time: f.time,
+        score: f.score || 0,
+        playerName: f.name,
+      })
+    })
+
+    sessionStorage.setItem('gameResults', JSON.stringify({
+      target: gameState.target,
+      mode: gameState.mode,
+      finishers: mapped,
+    }))
+
+    router.push('/results')
+  }, [finishers, gameState, router])
+
   if (!gameState) {
     return <div className="flex items-center justify-center min-h-screen font-mono text-gray-400">Loading...</div>
   }
@@ -130,6 +162,7 @@ function MultiGame() {
           myId={myIdRef.current}
           target={gameState.target}
           onPlayAgain={() => router.push('/')}
+          onViewResults={handleViewResults}
         />
       )}
     </div>
