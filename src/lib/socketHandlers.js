@@ -92,6 +92,7 @@ export function setupSocketHandlers(io) {
           roomCode,
           botId,
           difficulty: 'medium',
+          target: room.target,
           getPlayerLinks: (id) => {
             const p = getPlayer(gameId, id)
             return p ? p.allowedMoves : []
