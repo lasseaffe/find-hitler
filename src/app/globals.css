@@ -4,7 +4,10 @@
 @theme {
   --color-paper: #f5f0e8;
   --color-ink: #0e0e0e;
-  --color-red: #e5241e;
+  /* Accent. NOTE: kept named `--color-red` so existing bg-red/text-red utilities
+     keep working, but it holds COBALT — paper+ink+red was the Reichsflagge palette,
+     which is unacceptable behind the game's imagery. Rename to --color-accent later. */
+  --color-red: #2563eb;
   --color-paper-dim: #e7e0d4;
   --color-ink-soft: #0e0e0eaa;
 
