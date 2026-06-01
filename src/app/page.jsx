@@ -153,9 +153,10 @@ export default function HomePage() {
             <MonoLabel className="block mb-2.5">Game Mode</MonoLabel>
 
             {/* Hero: Classic */}
-            <button
+            <SelectCell
+              selected={mode === 'classic'}
               onClick={() => setMode('classic')}
-              className={`w-full flex items-center gap-4 px-4 py-5 mb-[3px] border-[3px] cursor-pointer transition-colors ${mode === 'classic' ? 'bg-ink text-paper border-ink' : 'bg-paper text-ink border-ink hover:bg-paper-dim'}`}
+              className="w-full flex items-center gap-4 px-4 py-5 mb-[3px] border-[3px] border-ink"
             >
               <HitlerMark size={52} fill={mode === 'classic' ? 'var(--color-paper)' : 'var(--color-ink)'} className="flex-none" />
               <div className="flex-1 text-left">
@@ -165,9 +166,9 @@ export default function HomePage() {
                 </div>
               </div>
               {mode === 'classic' && (
-                <span className="flex-none font-mono text-[8px] uppercase tracking-[0.12em] text-red bg-paper px-2 py-1">★ Main mode</span>
+                <span className="flex-none font-mono text-[8px] uppercase tracking-[0.12em] bg-paper text-red border border-red px-2 py-1">★ Main mode</span>
               )}
-            </button>
+            </SelectCell>
 
             {/* Variants row */}
             <MonoLabel className="block mt-3 mb-1.5">Variants</MonoLabel>
