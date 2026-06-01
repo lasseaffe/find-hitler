@@ -1,6 +1,6 @@
 // src/components/ResultsScreen.jsx
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { buildGraph } from '@/lib/pathGraph'
@@ -16,14 +16,18 @@ export default function ResultsScreen({ results }) {
   const [copied, setCopied] = useState(false)
   const [sharedCopied, setSharedCopied] = useState(false)
 
-  const { nodes, links } = buildGraph(results.finishers)
+  const { nodes, links } = useMemo(() => buildGraph(results.finishers), [results.finishers])
   const me = results.finishers.find(f => f.isMe) || results.finishers[0]
 
   const handleCopyPath = async () => {
     const text = me?.path?.join(' → ') || ''
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard permission denied — silently ignore
+    }
   }
 
   const handleShare = async () => {
@@ -35,9 +39,13 @@ export default function ResultsScreen({ results }) {
         return `${medal} ${f.name}: ${f.clicks} clicks${time}`
       }),
     ]
-    await navigator.clipboard.writeText(lines.join('\n'))
-    setSharedCopied(true)
-    setTimeout(() => setSharedCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'))
+      setSharedCopied(true)
+      setTimeout(() => setSharedCopied(false), 2000)
+    } catch {
+      // Clipboard permission denied — silently ignore
+    }
   }
 
   return (

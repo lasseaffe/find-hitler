@@ -45,15 +45,16 @@ describe('leaderboard', () => {
     expect(getEntries()).toHaveLength(2)
   })
 
-  it('caps at 50 entries, dropping the lowest score when over the limit', () => {
+  it('caps at 50 entries, dropping the lowest score among existing entries when over the limit', () => {
     for (let i = 0; i < 50; i++) {
       addEntry({ mode: 'classic', target: 'Adolf Hitler', clicks: 5, time: 60, score: 1000 + i, playerName: `p${i}` })
     }
-    // All 50 have score 1000..1049. Add one with score 500 — should be dropped immediately.
+    // Add one more — it should be kept; p0 (lowest score 1000) should be evicted
     addEntry({ mode: 'classic', target: 'Adolf Hitler', clicks: 10, time: 90, score: 500, playerName: 'worst' })
     const entries = getEntries()
     expect(entries).toHaveLength(50)
-    expect(entries.find(e => e.playerName === 'worst')).toBeUndefined()
+    expect(entries.find(e => e.playerName === 'worst')).toBeDefined()   // the new entry is kept
+    expect(entries.find(e => e.playerName === 'p0')).toBeUndefined()    // p0 (score 1000) is evicted
   })
 
   it('addEntry attaches a date string to each entry', () => {

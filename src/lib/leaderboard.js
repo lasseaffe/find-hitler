@@ -25,8 +25,11 @@ export function addEntry({ mode, target, clicks, time, score, playerName }) {
   entries.push({ mode, target, clicks, time, score, playerName, date: today() })
 
   if (entries.length > MAX_ENTRIES) {
-    // Drop the entry with the lowest score (LRU by quality)
-    const minIdx = entries.reduce((best, e, i, arr) => e.score < arr[best].score ? i : best, 0)
+    // Drop the lowest-score entry among existing entries (never the one just added)
+    const minIdx = entries.slice(0, entries.length - 1).reduce(
+      (best, e, i, arr) => e.score < arr[best].score ? i : best,
+      0
+    )
     entries.splice(minIdx, 1)
   }
 

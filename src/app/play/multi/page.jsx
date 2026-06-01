@@ -103,6 +103,20 @@ function MultiGame() {
       isBot: f.isBot || false,
     }))
 
+    // If no finisher is flagged as 'me' (e.g. you-finished fired before player-finished),
+    // synthesize a fallback from myFinish
+    if (!mapped.some(f => f.isMe) && myFinish) {
+      mapped.unshift({
+        name: myFinish.name || 'You',
+        path: myFinish.path || [],
+        clicks: myFinish.clicks,
+        time: myFinish.seconds ?? null,
+        score: myFinish.score ?? null,
+        isMe: true,
+        isBot: false,
+      })
+    }
+
     mapped.filter(f => f.isMe).forEach(f => {
       addEntry({
         mode: gameState.mode,
