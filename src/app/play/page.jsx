@@ -14,6 +14,8 @@ function PlayGame() {
   const [undoTokens, setUndoTokens] = useState(3)
   const [isLoading, setIsLoading] = useState(false)
   const [win, setWin] = useState(null)
+  const [bounceMessage, setBounceMessage] = useState(null)
+  const [jesusRound, setJesusRound] = useState(null)
 
   useEffect(() => {
     const raw = sessionStorage.getItem('gameInit')
@@ -25,16 +27,24 @@ function PlayGame() {
       playerId: init.playerId,
       target: init.target,
       mode: init.mode,
+      hardcore: init.hardcore || false,
       startPage: init.title,
+      timeLimitSeconds: init.timeLimitSeconds || null,
     })
     setHtml(init.html)
     setClicks(init.clicks)
     setUndoTokens(init.undoTokens)
+    if (init.jesusRound) setJesusRound(init.jesusRound)
   }, [router])
+
+  const handleTimeUp = useCallback(() => {
+    if (!win) setWin({ timeUp: true, clicks, score: clicks, time: null })
+  }, [win, clicks])
 
   const handleNavigate = useCallback(async (target) => {
     if (isLoading || win || !gameState) return
     setIsLoading(true)
+    setBounceMessage(null)
     try {
       const res = await fetch('/api/game/move', {
         method: 'POST',
@@ -44,9 +54,29 @@ function PlayGame() {
       const data = await res.json()
       if (!res.ok) { console.error(data.error); setIsLoading(false); return }
 
+      if (data.status === 'HUB_BOUNCE') {
+        setUndoTokens(data.undoTokens)
+        setBounceMessage(`⛔ "${data.hubPage}" is a hub page! Bounced back.`)
+        setTimeout(() => setBounceMessage(null), 3000)
+        setIsLoading(false)
+        return
+      }
+
+      if (data.status === 'TIME_UP') {
+        setWin({ timeUp: true, clicks: data.clicks, score: data.clicks, time: null })
+        setIsLoading(false)
+        return
+      }
+
       setClicks(data.clicks)
       if (data.status === 'WIN') {
-        setWin({ score: data.score, clicks: data.clicks, time: data.time })
+        setWin({
+          score: data.score,
+          clicks: data.clicks,
+          time: data.time,
+          parGrade: data.parGrade || null,
+          parDelta: data.parDelta ?? null,
+        })
       } else {
         setHtml(data.html)
         setUndoTokens(data.undoTokens)
@@ -89,6 +119,12 @@ function PlayGame() {
         <div className="fixed top-0 left-0 right-0 h-[3px] z-[999] bg-gradient-to-r from-red-500 via-yellow-400 to-red-500 bg-[length:200%_auto] animate-shimmer" />
       )}
 
+      {bounceMessage && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[998] bg-red-700 text-white font-mono text-sm px-6 py-3 rounded-full shadow-lg animate-bounce">
+          {bounceMessage}
+        </div>
+      )}
+
       <GameHUD
         startPage={gameState.startPage}
         target={gameState.target}
@@ -96,6 +132,9 @@ function PlayGame() {
         clicks={clicks}
         undoTokens={undoTokens}
         onUndo={handleUndo}
+        timeLimitSeconds={gameState.timeLimitSeconds}
+        jesusRound={jesusRound}
+        onTimeUp={handleTimeUp}
       />
 
       <div className="max-w-3xl mx-auto pt-20 px-6">
@@ -112,6 +151,10 @@ function PlayGame() {
           clicks={win.clicks}
           time={win.time}
           target={gameState.target}
+          mode={gameState.mode}
+          parGrade={win.parGrade}
+          parDelta={win.parDelta}
+          timeUp={win.timeUp}
           onPlayAgain={() => router.push('/')}
         />
       )}
