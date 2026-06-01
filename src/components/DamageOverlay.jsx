@@ -30,35 +30,35 @@ export default function DamageOverlay({ trigger, hp, maxHp = 5000 }) {
 
   return (
     <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 39 }}>
-      {/* Red wash */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: `rgba(200,0,0,${washOpacity})`,
-        animation: 'fh-overlay-fade 0.6s ease-out forwards',
-      }} />
-      {/* Chromatic R bleed */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'rgba(255,0,0,0.12)',
-        transform: 'translateX(3px)',
-        animation: 'fh-overlay-fade 0.5s ease-out forwards',
-        mixBlendMode: 'screen',
-      }} />
-      {/* Chromatic B bleed */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'rgba(0,0,255,0.08)',
-        transform: 'translateX(-3px)',
-        animation: 'fh-overlay-fade 0.5s ease-out forwards',
-        mixBlendMode: 'screen',
-      }} />
-      {/* Shake wrapper */}
       <div style={{
         position: 'absolute', inset: 0,
         animation: shakeAnim,
         filter: blur,
         pointerEvents: 'none',
-      }} />
+      }}>
+        {/* Red wash */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `rgba(200,0,0,${washOpacity})`,
+          animation: 'fh-overlay-fade 0.6s ease-out forwards',
+        }} />
+        {/* Chromatic R bleed */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(255,0,0,0.12)',
+          transform: 'translateX(3px)',
+          animation: 'fh-overlay-fade 0.5s ease-out forwards',
+          mixBlendMode: 'screen',
+        }} />
+        {/* Chromatic B bleed */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(0,0,255,0.08)',
+          transform: 'translateX(-3px)',
+          animation: 'fh-overlay-fade 0.5s ease-out forwards',
+          mixBlendMode: 'screen',
+        }} />
+      </div>
     </div>
   )
 }
