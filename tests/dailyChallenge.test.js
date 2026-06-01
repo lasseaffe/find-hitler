@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { getDailyPair, seedFromDate } from '../src/lib/dailyChallenge.js'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { getDailyPair, seedFromDate, hasPlayedDailyToday, markDailyPlayed } from '../src/lib/dailyChallenge.js'
 
 describe('dailyChallenge', () => {
   it('seedFromDate produces an integer from a date string', () => {
@@ -30,5 +30,29 @@ describe('dailyChallenge', () => {
     expect(pair.start.length).toBeGreaterThan(0)
     expect(pair.target.length).toBeGreaterThan(0)
     expect(pair.start).not.toBe(pair.target)
+  })
+})
+
+describe('hasPlayedDailyToday', () => {
+  beforeEach(() => {
+    const store = {}
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => store[k] ?? null,
+      setItem: (k, v) => { store[k] = v },
+    })
+  })
+
+  it('returns false when never played', () => {
+    expect(hasPlayedDailyToday('2026-06-01')).toBe(false)
+  })
+
+  it('returns true after markDailyPlayed called for same date', () => {
+    markDailyPlayed('2026-06-01')
+    expect(hasPlayedDailyToday('2026-06-01')).toBe(true)
+  })
+
+  it('returns false for a different date', () => {
+    markDailyPlayed('2026-05-31')
+    expect(hasPlayedDailyToday('2026-06-01')).toBe(false)
   })
 })

@@ -45,3 +45,20 @@ export function getDailyPair(dateStr = new Date().toISOString().slice(0, 10)) {
   const seed = seedFromDate(dateStr)
   return DAILY_PAIRS[seed % DAILY_PAIRS.length]
 }
+
+const DAILY_PLAYED_KEY = 'findHitler_dailyPlayed'
+
+export function hasPlayedDailyToday(dateStr = new Date().toISOString().slice(0, 10)) {
+  if (typeof localStorage === 'undefined') return false
+  try {
+    const stored = JSON.parse(localStorage.getItem(DAILY_PLAYED_KEY) || 'null')
+    return stored?.date === dateStr
+  } catch {
+    return false
+  }
+}
+
+export function markDailyPlayed(dateStr = new Date().toISOString().slice(0, 10)) {
+  if (typeof localStorage === 'undefined') return
+  localStorage.setItem(DAILY_PLAYED_KEY, JSON.stringify({ date: dateStr }))
+}
