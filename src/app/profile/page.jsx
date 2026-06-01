@@ -17,13 +17,13 @@ const loadingScreen = (
 )
 
 const MODE_COLORS = {
-  classic:  { bg: '#e5241e', text: '#fff' },
+  classic:  { bg: '#2563eb', text: '#fff' },
   speedrun: { bg: '#b45309', text: '#fff' },
   golf:     { bg: '#166534', text: '#fff' },
   jesus:    { bg: '#1e40af', text: '#fff' },
   daily:    { bg: '#6b21a8', text: '#fff' },
   nohub:    { bg: '#374151', text: '#fff' },
-  ranked:   { bg: '#0e0e0e', text: '#e5241e' },
+  ranked:   { bg: '#0e0e0e', text: '#2563eb' },
 }
 
 function ModeBadge({ mode }) {
@@ -142,10 +142,10 @@ export default function ProfilePage() {
                         <span className="font-display uppercase text-[11px]">{m.target}</span>
                         <span style={{ fontSize: 9, color: '#555' }}>{m.clicks} cl · {formatSeconds(m.seconds)}</span>
                         {m.totalPlayers > 1 && m.rank > 0 && (
-                          <span style={{ fontSize: 8, color: m.rank === 1 ? '#e5241e' : '#888' }}>#{m.rank} of {m.totalPlayers}</span>
+                          <span style={{ fontSize: 8, color: m.rank === 1 ? '#2563eb' : '#888' }}>#{m.rank} of {m.totalPlayers}</span>
                         )}
                         {m.mode === 'ranked' && m.eloChange !== 0 && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: m.eloChange > 0 ? '#16a34a' : '#e5241e' }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: m.eloChange > 0 ? '#16a34a' : '#2563eb' }}>
                             {m.eloChange > 0 ? '+' : ''}{m.eloChange} LP
                           </span>
                         )}

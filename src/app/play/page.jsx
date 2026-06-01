@@ -170,7 +170,7 @@ function PlayGame() {
           className="fixed inset-x-0 top-0 z-50"
           style={{
             height: 3,
-            background: 'linear-gradient(90deg, #e5241e 0%, #fbbf24 50%, #e5241e 100%)',
+            background: 'linear-gradient(90deg, #2563eb 0%, #fbbf24 50%, #2563eb 100%)',
             backgroundSize: '200%',
             animation: 'shimmer 1s linear infinite',
           }}
@@ -196,7 +196,7 @@ function PlayGame() {
             <div
               className="mb-3 font-mono uppercase tracking-wide text-center"
               style={{
-                border: '2px solid #e5241e',
+                border: '2px solid #2563eb',
                 background: '#0e0e0e',
                 color: '#f5f0e8',
                 padding: '6px 16px',

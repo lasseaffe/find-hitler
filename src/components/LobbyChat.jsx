@@ -57,7 +57,7 @@ export default function LobbyChat({ socket, roomCode, playerCount = 0 }) {
       {/* Header */}
       <div className="flex items-center justify-between border-b-4 border-ink px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60 flex-shrink-0">
         <span>Chat</span>
-        <span style={{ color: '#e5241e' }}>{playerCount} players</span>
+        <span style={{ color: '#2563eb' }}>{playerCount} players</span>
       </div>
 
       {/* Emote bar */}
@@ -88,7 +88,7 @@ export default function LobbyChat({ socket, roomCode, playerCount = 0 }) {
           )
           // system
           return (
-            <div key={i} style={{ color: msg.isWin ? '#e5241e' : '#555', fontStyle: 'italic' }}>
+            <div key={i} style={{ color: msg.isWin ? '#2563eb' : '#555', fontStyle: 'italic' }}>
               {msg.text}
             </div>
           )
@@ -111,7 +111,7 @@ export default function LobbyChat({ socket, roomCode, playerCount = 0 }) {
         />
         <button onClick={sendMessage}
           style={{
-            background: '#e5241e', color: '#fff', border: 'none', cursor: 'pointer',
+            background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer',
             fontFamily: 'ui-monospace,monospace', fontSize: 8, fontWeight: 700,
             padding: '0 10px', textTransform: 'uppercase', letterSpacing: '0.08em',
           }}>

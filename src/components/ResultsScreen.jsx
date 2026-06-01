@@ -80,7 +80,7 @@ function Connector({ delay, overlapPct }) {
         />
       </div>
       {overlapPct != null && (
-        <span style={{ color: overlapPct >= 50 ? '#e5241e' : overlapPct >= 20 ? '#fbbf24' : '#555', fontSize: 7, fontFamily: 'ui-monospace, monospace', marginTop: 2, whiteSpace: 'nowrap' }}>
+        <span style={{ color: overlapPct >= 50 ? '#2563eb' : overlapPct >= 20 ? '#fbbf24' : '#555', fontSize: 7, fontFamily: 'ui-monospace, monospace', marginTop: 2, whiteSpace: 'nowrap' }}>
           {overlapPct}%
         </span>
       )}
@@ -170,7 +170,7 @@ async function buildShareImage({ path, clicks, time, target, personalBest }) {
   ctx.fillRect(0, 0, W, H)
 
   // Red accent bar top
-  ctx.fillStyle = '#e5241e'
+  ctx.fillStyle = '#2563eb'
   ctx.fillRect(0, 0, W, 8)
 
   // Red accent bar bottom
@@ -183,7 +183,7 @@ async function buildShareImage({ path, clicks, time, target, personalBest }) {
   ctx.fillText('FIND HITLER', 60, 100)
 
   // Target badge
-  ctx.fillStyle = '#e5241e'
+  ctx.fillStyle = '#2563eb'
   const targetText = `TARGET: ${target.toUpperCase()}`
   ctx.font = 'bold 22px ui-monospace, monospace'
   const tw = ctx.measureText(targetText).width
@@ -346,7 +346,7 @@ export default function ResultsScreen({ results }) {
         {/* Overlap legend */}
         {Object.keys(edgeOverlap).length > 0 && (
           <div className="px-4 pb-2 font-mono text-[8px] uppercase tracking-widest" style={{ color: '#555' }}>
-            % = share of your runs using that link · <span style={{ color: '#fbbf24' }}>yellow ≥ 20%</span> · <span style={{ color: '#e5241e' }}>red ≥ 50%</span>
+            % = share of your runs using that link · <span style={{ color: '#fbbf24' }}>yellow ≥ 20%</span> · <span style={{ color: '#2563eb' }}>red ≥ 50%</span>
           </div>
         )}
 
@@ -385,10 +385,10 @@ export default function ResultsScreen({ results }) {
                     return (
                       <tr key={i} style={{ borderBottom: '1px solid #1a1a1a', background: isLast ? '#1a0000' : 'transparent' }}>
                         <td className="px-4 py-1.5" style={{ color: '#555' }}>{i + 1}</td>
-                        <td className="px-4 py-1.5" style={{ color: isLast ? '#e5241e' : '#f5f0e8', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{page}</td>
+                        <td className="px-4 py-1.5" style={{ color: isLast ? '#2563eb' : '#f5f0e8', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{page}</td>
                         <td className="px-4 py-1.5 text-right" style={{ color: '#666' }}>{arrived != null ? `${arrived}s` : '—'}</td>
                         <td className="px-4 py-1.5 text-right" style={{ color: spent != null && spent <= 5 ? '#fbbf24' : '#555' }}>{spent != null ? `${spent}s` : isLast ? 'finish' : '—'}</td>
-                        <td className="px-4 py-1.5 text-right" style={{ color: overlap != null && overlap >= 50 ? '#e5241e' : overlap != null && overlap >= 20 ? '#fbbf24' : '#444' }}>
+                        <td className="px-4 py-1.5 text-right" style={{ color: overlap != null && overlap >= 50 ? '#2563eb' : overlap != null && overlap >= 20 ? '#fbbf24' : '#444' }}>
                           {overlap != null ? `${overlap}%` : '—'}
                         </td>
                       </tr>
