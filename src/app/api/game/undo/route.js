@@ -27,8 +27,9 @@ export async function POST(request) {
     const updated = getPlayer(gameId, playerId)
 
     return NextResponse.json({
+      status: 'CONTINUE',
+      html: result.html,
       title: result.page,
-      cleanHtml: result.html,
       clicks: updated.clicks,
       undoTokens: updated.undoTokens,
     })

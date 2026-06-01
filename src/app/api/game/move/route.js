@@ -40,19 +40,25 @@ export async function POST(request) {
 
     // Win condition check
     const won = normTitle(title) === normTitle(game.target)
-    let score = null
+
     if (won) {
       const seconds = Math.floor((Date.now() - game.startTime) / 1000)
-      score = calculateScore({ mode: game.mode, clicks: updatedPlayer.clicks, seconds })
+      const score = calculateScore({ mode: game.mode, clicks: updatedPlayer.clicks, seconds })
+      return NextResponse.json({
+        status: 'WIN',
+        score,
+        clicks: updatedPlayer.clicks,
+        time: seconds,
+        path: [...updatedPlayer.history.map(h => h.page), title],
+      })
     }
 
     return NextResponse.json({
+      status: 'CONTINUE',
+      html: cleanHtml,
       title,
-      cleanHtml,
       clicks: updatedPlayer.clicks,
       undoTokens: updatedPlayer.undoTokens,
-      won,
-      score,
     })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
