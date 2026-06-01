@@ -4,6 +4,8 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useSocket } from '@/hooks/useSocket'
 import RankBadge from '@/components/RankBadge'
+import HitlerMark from '@/components/ui/HitlerMark'
+import { RedButton } from '@/components/ui/primitives'
 
 export default function RankedPage() {
   const { data: session, status } = useSession()
@@ -15,118 +17,77 @@ export default function RankedPage() {
 
   const handlers = {
     'ranked:queued': ({ message }) => {
-      setQueueState('queued')
-      setStatusMsg(message)
-      setWaitSeconds(0)
+      setQueueState('queued'); setStatusMsg(message); setWaitSeconds(0)
       timerRef.current = setInterval(() => setWaitSeconds(s => s + 1), 1000)
     },
-    'ranked:left': () => {
-      setQueueState('idle')
-      clearInterval(timerRef.current)
-    },
+    'ranked:left': () => { setQueueState('idle'); clearInterval(timerRef.current) },
     'ranked:matched': (data) => {
-      setQueueState('matched')
-      clearInterval(timerRef.current)
+      setQueueState('matched'); clearInterval(timerRef.current)
       sessionStorage.setItem('rankedGameInit', JSON.stringify(data))
       router.push('/play/ranked')
     },
   }
-
   const socketRef = useSocket(handlers)
-
-  useEffect(() => {
-    return () => clearInterval(timerRef.current)
-  }, [])
+  useEffect(() => () => clearInterval(timerRef.current), [])
 
   const handleJoinQueue = () => {
     if (!socketRef.current || !session?.user) return
     socketRef.current.emit('ranked:join', {
-      userId: session.user.id,
-      elo: session.user.elo || 1000,
+      userId: session.user.id, elo: session.user.elo || 1000,
       name: session.user.name || session.user.email,
     })
   }
-
-  const handleLeaveQueue = () => {
-    socketRef.current?.emit('ranked:leave')
-  }
+  const handleLeaveQueue = () => socketRef.current?.emit('ranked:leave')
 
   if (status === 'loading') {
-    return <div className="min-h-screen bg-[#0d1117] flex items-center justify-center text-gray-400 font-mono">Loading...</div>
+    return <div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-widest text-ink/60">Loading…</div>
   }
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-6 px-4">
-        <h1 className="text-4xl font-black text-yellow-400">Ranked Duels</h1>
-        <p className="text-gray-400 font-mono text-sm text-center max-w-xs">
-          Sign in to compete on the ranked ladder. Guest play remains available on the home screen.
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-paper px-4">
+        <HitlerMark size={64} />
+        <h1 className="text-4xl">Ranked Duels</h1>
+        <p className="max-w-xs text-center font-mono text-xs uppercase tracking-wider text-ink/60">
+          Sign in to compete on the ranked ladder. Guest play stays free on the home screen.
         </p>
-        <button
-          onClick={() => router.push('/login')}
-          className="px-8 py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-black rounded-xl uppercase tracking-widest text-sm"
-        >
-          Sign In to Play Ranked →
-        </button>
-        <a href="/" className="text-gray-500 hover:text-gray-300 font-mono text-xs uppercase tracking-widest">
-          ← Back to Guest Play
-        </a>
+        <div className="w-full max-w-xs"><RedButton onClick={() => router.push('/login')}>Sign In to Play Ranked →</RedButton></div>
+        <a href="/" className="font-mono text-[10px] uppercase tracking-widest text-ink/50 hover:text-red">← Back to guest play</a>
       </div>
     )
   }
 
   const user = session.user
-
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white flex flex-col items-center justify-center px-4 gap-8">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-4">
       <div className="text-center">
-        <h1 className="text-4xl font-black text-yellow-400 tracking-tight">Ranked Duels</h1>
-        <p className="text-gray-500 font-mono text-sm mt-1">1v1 · HP Duel format · ELO ladder</p>
+        <h1 className="text-4xl">Ranked Duels</h1>
+        <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">1v1 · HP Duel · ELO ladder</p>
       </div>
 
-      <div className="bg-[#1a1a2e] border border-yellow-400/20 rounded-2xl px-8 py-6 text-center space-y-3 min-w-[280px]">
-        <div className="font-black text-lg text-white">{user.name || user.email}</div>
-        <RankBadge rank={user.rank || 'BRONZE'} elo={user.elo || 1000} size="lg" />
-        <a href="/profile" className="block text-xs font-mono text-gray-500 hover:text-gray-300 uppercase tracking-widest">
-          View Match History →
-        </a>
+      <div className="min-w-[280px] border-4 border-ink bg-paper px-8 py-6 text-center">
+        <div className="font-display text-lg uppercase">{user.name || user.email}</div>
+        <div className="my-3"><RankBadge rank={user.rank || 'BRONZE'} elo={user.elo || 1000} size="lg" /></div>
+        <a href="/profile" className="font-mono text-[10px] uppercase tracking-widest text-ink/50 hover:text-red">View Match History →</a>
       </div>
 
-      {queueState === 'idle' && (
-        <button
-          onClick={handleJoinQueue}
-          className="px-10 py-4 bg-red-600 hover:bg-red-500 text-white font-black text-lg rounded-xl uppercase tracking-widest shadow-[0_0_30px_rgba(192,57,43,0.4)] transition-colors"
-        >
-          Find Match →
-        </button>
-      )}
+      {queueState === 'idle' && <div className="w-full max-w-xs"><RedButton onClick={handleJoinQueue}>Find Match →</RedButton></div>}
 
       {queueState === 'queued' && (
-        <div className="text-center space-y-4">
-          <div className="flex items-center gap-3 justify-center">
-            <div className="w-3 h-3 rounded-full bg-yellow-400 animate-pulse" />
-            <span className="font-mono text-yellow-400 text-sm uppercase tracking-widest">
-              {statusMsg} · {waitSeconds}s
-            </span>
+        <div className="space-y-4 text-center">
+          <div className="flex items-center justify-center gap-3">
+            <div className="h-3 w-3 animate-pulse bg-red" />
+            <span className="font-mono text-sm uppercase tracking-widest">{statusMsg} · {waitSeconds}s</span>
           </div>
-          <button
-            onClick={handleLeaveQueue}
-            className="px-6 py-2 border border-red-500/50 hover:border-red-500 text-red-400 font-mono text-sm rounded-lg uppercase tracking-widest transition-colors"
-          >
-            Cancel
-          </button>
+          <button onClick={handleLeaveQueue} className="border-[3px] border-ink px-6 py-2 font-mono text-xs uppercase tracking-widest hover:bg-paper-dim cursor-pointer">✕ Cancel</button>
         </div>
       )}
 
       {queueState === 'matched' && (
-        <div className="font-mono text-green-400 text-sm uppercase tracking-widest animate-pulse">
-          Opponent found! Starting duel...
-        </div>
+        <div className="animate-pulse font-mono text-sm uppercase tracking-widest text-red">Opponent found — starting duel…</div>
       )}
 
-      <a href="/" className="text-gray-500 hover:text-gray-300 font-mono text-xs uppercase tracking-widest">
-        ← Home
-      </a>
+      <a href="/" className="font-mono text-[10px] uppercase tracking-widest text-ink/50 hover:text-red">← Home</a>
     </div>
   )
 }

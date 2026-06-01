@@ -17,8 +17,8 @@ export default function ResultsPage() {
 
   if (!results) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0d1117] text-gray-400 font-mono">
-        Loading...
+      <div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-widest text-ink/60">
+        Loading…
       </div>
     )
   }

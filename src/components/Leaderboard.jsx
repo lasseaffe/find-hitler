@@ -3,43 +3,47 @@
 export default function Leaderboard({ entries }) {
   if (!entries.length) {
     return (
-      <div className="text-center py-20 text-gray-500 font-mono">
-        No races recorded yet. Play a game to get on the board.
+      <div className="border-4 border-ink bg-paper px-6 py-16 text-center">
+        <p className="font-display text-xl uppercase">No races recorded</p>
+        <p className="mt-2 font-mono text-xs uppercase tracking-widest text-ink/60">
+          Play a game to get on the board
+        </p>
+        <a href="/" className="mt-5 inline-block bg-red px-5 py-2.5 font-display uppercase tracking-wide text-sm text-paper">Start Race →</a>
       </div>
     )
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full font-mono text-sm">
+    <div className="overflow-x-auto border-4 border-ink">
+      <table className="w-full border-collapse font-mono text-xs">
         <thead>
-          <tr className="text-yellow-400 border-b border-yellow-400/20 text-left">
-            <th className="py-2 pr-4 w-8">#</th>
-            <th className="py-2 pr-4">Player</th>
-            <th className="py-2 pr-4">Target</th>
-            <th className="py-2 pr-4">Mode</th>
-            <th className="py-2 pr-4">Clicks</th>
-            <th className="py-2 pr-4">Time</th>
-            <th className="py-2 pr-4">Score</th>
-            <th className="py-2">Date</th>
+          <tr className="bg-ink text-left uppercase tracking-widest text-paper">
+            <th className="w-8 px-3 py-2.5">#</th>
+            <th className="px-3 py-2.5">Player</th>
+            <th className="px-3 py-2.5">Target</th>
+            <th className="px-3 py-2.5">Mode</th>
+            <th className="px-3 py-2.5">Clk</th>
+            <th className="px-3 py-2.5">Time</th>
+            <th className="px-3 py-2.5">Score</th>
+            <th className="px-3 py-2.5">Date</th>
           </tr>
         </thead>
         <tbody>
-          {entries.map((e, i) => (
-            <tr
-              key={i}
-              className="border-b border-[#1a1a2e] hover:bg-[#1a1a2e]/50 transition-colors"
-            >
-              <td className="py-2 pr-4 text-gray-500">{i + 1}</td>
-              <td className="py-2 pr-4 text-white font-bold">{e.playerName}</td>
-              <td className="py-2 pr-4 text-red-400">{e.target}</td>
-              <td className="py-2 pr-4 text-gray-400 capitalize">{e.mode}</td>
-              <td className="py-2 pr-4 text-yellow-400">{e.clicks}</td>
-              <td className="py-2 pr-4 text-gray-400">{e.time != null ? `${e.time}s` : '—'}</td>
-              <td className="py-2 pr-4 text-green-400">{e.score?.toLocaleString() ?? '—'}</td>
-              <td className="py-2 text-gray-500">{e.date}</td>
-            </tr>
-          ))}
+          {entries.map((e, i) => {
+            const top = i === 0
+            return (
+              <tr key={i} className={`border-t-2 border-ink ${top ? 'bg-ink text-paper' : 'bg-paper'}`}>
+                <td className={`px-3 py-2 font-display ${top ? 'text-red' : ''}`}>{String(i + 1).padStart(2, '0')}</td>
+                <td className="px-3 py-2 font-display uppercase">{e.playerName}</td>
+                <td className={`px-3 py-2 ${top ? 'text-paper' : 'text-red'}`}>{e.target}</td>
+                <td className="px-3 py-2 uppercase opacity-70">{e.mode}</td>
+                <td className="px-3 py-2">{e.clicks}</td>
+                <td className="px-3 py-2 opacity-70">{e.time != null ? `${e.time}s` : '—'}</td>
+                <td className="px-3 py-2">{e.score?.toLocaleString() ?? '—'}</td>
+                <td className="px-3 py-2 opacity-50">{e.date}</td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>

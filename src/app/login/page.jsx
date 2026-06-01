@@ -2,6 +2,8 @@
 import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
+import HitlerMark from '@/components/ui/HitlerMark'
+import { RedButton } from '@/components/ui/primitives'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -13,8 +15,7 @@ function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email.trim()) return
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     const res = await signIn('nodemailer', { email, redirect: false })
     setLoading(false)
     if (res?.error) setError('Could not send magic link. Check your email address.')
@@ -22,49 +23,34 @@ function LoginForm() {
 
   if (verify) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <div className="text-5xl">📬</div>
-          <h1 className="text-2xl font-black text-yellow-400">Check your email</h1>
-          <p className="text-gray-400 font-mono text-sm">
-            A magic link was sent. Click it to sign in. You can close this tab.
-          </p>
-          <a href="/" className="block text-yellow-400/60 hover:text-yellow-400 font-mono text-xs uppercase tracking-widest mt-4">
-            ← Back to Home
-          </a>
+      <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+        <div className="w-full max-w-sm border-4 border-ink bg-paper px-8 py-10 text-center">
+          <HitlerMark size={56} className="mx-auto" />
+          <h1 className="mt-4 text-2xl">Check your email</h1>
+          <p className="mt-2 font-mono text-xs uppercase tracking-wider text-ink/60">A magic link was sent. Click it to sign in — you can close this tab.</p>
+          <a href="/" className="mt-5 inline-block font-mono text-[10px] uppercase tracking-widest text-ink/50 hover:text-red">← Back to home</a>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4">
-      <div className="max-w-sm w-full space-y-6">
-        <div className="text-center">
-          <h1 className="text-4xl font-black text-yellow-400 tracking-tight">Sign In</h1>
-          <p className="text-gray-400 font-mono text-sm mt-2">Get a magic link by email. No password needed.</p>
+    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+      <div className="w-full max-w-sm border-4 border-ink bg-paper">
+        <div className="border-b-4 border-ink px-6 py-5 text-center">
+          <HitlerMark size={48} className="mx-auto" />
+          <h1 className="mt-3 text-3xl">Sign In</h1>
+          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Magic link by email · no password</p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-6 py-6">
           <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            className="w-full bg-[#1a1a2e] border border-gray-600 rounded-lg px-4 py-3 text-white font-mono focus:outline-none focus:border-yellow-400"
-            required
+            type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required
+            className="w-full border-[3px] border-ink bg-paper px-3 py-2.5 font-mono text-sm text-ink placeholder:text-ink/40 outline-none focus:bg-paper-dim caret-red"
           />
-          {error && <p className="text-red-400 font-mono text-sm">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 text-black font-black rounded-xl uppercase tracking-widest text-sm transition-colors"
-          >
-            {loading ? 'Sending...' : 'Send Magic Link →'}
-          </button>
+          {error && <p className="font-mono text-xs text-red">{error}</p>}
+          <RedButton type="submit" disabled={loading}>{loading ? 'Sending…' : 'Send Magic Link →'}</RedButton>
         </form>
-        <a href="/" className="block text-center text-gray-500 hover:text-gray-300 font-mono text-xs uppercase tracking-widest">
-          ← Back · play as guest
-        </a>
+        <a href="/" className="block border-t-4 border-ink py-3 text-center font-mono text-[10px] uppercase tracking-widest text-ink/50 hover:text-red">← Back · play as guest</a>
       </div>
     </div>
   )
@@ -72,7 +58,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0d1117]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-paper" />}>
       <LoginForm />
     </Suspense>
   )

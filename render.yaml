@@ -1,0 +1,18 @@
+# Render blueprint — $0 deploy (free web service; spins down after 15 min idle,
+# wakes on next request). Render injects $PORT; server.js binds it.
+services:
+  - type: web
+    name: find-hitler
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Optional — set these for auth/ranked/profile (otherwise they degrade gracefully):
+      # - key: DATABASE_URL
+      #   sync: false
+      # - key: AUTH_SECRET
+      #   generateValue: true
+      # - key: AUTH_URL
+      #   sync: false   # e.g. https://find-hitler.onrender.com

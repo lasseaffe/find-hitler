@@ -12,9 +12,7 @@ export default function WikiArticle({ html, onNavigate, disabled }) {
 
   useEffect(() => {
     const block = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
-        e.preventDefault()
-      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') e.preventDefault()
     }
     window.addEventListener('keydown', block)
     return () => window.removeEventListener('keydown', block)
@@ -34,10 +32,14 @@ export default function WikiArticle({ html, onNavigate, disabled }) {
 
   const safeHtml = DOMPurify.sanitize(html, PURIFY_CONFIG)
 
+  // `wiki` enables the brutalist link styling from globals.css (underline -> red on hover).
+  // serif prose for Wikipedia readability; display font for headings.
   return (
     <div ref={containerRef}>
       <div
-        className="prose prose-blue max-w-none text-lg leading-relaxed"
+        className="wiki prose prose-neutral max-w-none font-serif text-ink
+                   prose-headings:font-display prose-headings:uppercase prose-headings:text-ink
+                   prose-a:text-ink text-base sm:text-lg leading-relaxed"
         onClick={handleClick}
         dangerouslySetInnerHTML={{ __html: safeHtml }}
       />

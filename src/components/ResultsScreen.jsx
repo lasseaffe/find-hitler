@@ -1,110 +1,154 @@
-// src/components/ResultsScreen.jsx
 'use client'
-import { useState, useMemo } from 'react'
+import { Fragment, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
-import { buildGraph } from '@/lib/pathGraph'
-import { getColor } from '@/lib/resultColors'
+import HitlerMark from '@/components/ui/HitlerMark'
+import { RedButton } from '@/components/ui/primitives'
 
-// Dynamic import avoids SSR issues with D3 and SVG
-const NodeGraph = dynamic(() => import('@/components/NodeGraph'), { ssr: false })
+// Horizontal animated flowchart node
+function FlowNode({ label, target, delay }) {
+  if (target) {
+    return (
+      <div
+        className="flex flex-none items-center gap-2 bg-ink px-3 py-2 text-paper"
+        style={{ animation: `fh-node-in 0.3s both, fh-target-flash 0.5s 1`, animationDelay: `${delay}s, ${delay}s` }}
+      >
+        <HitlerMark size={22} fill="var(--color-paper)" />
+        <span className="font-display uppercase text-sm tracking-wide">{label}</span>
+      </div>
+    )
+  }
+  return (
+    <div
+      className="flex-none border-[3px] border-ink bg-paper px-3 py-2 font-display uppercase text-[13px] whitespace-nowrap"
+      style={{ animation: 'fh-node-in 0.26s both', animationDelay: `${delay}s` }}
+    >
+      {label}
+    </div>
+  )
+}
 
-const MEDALS = ['🥇', '🥈', '🥉']
+function Connector({ delay }) {
+  return (
+    <div className="flex flex-none items-center" aria-hidden>
+      <span className="block h-1 w-5 origin-left bg-ink" style={{ animation: 'fh-line-in 0.14s both', animationDelay: `${delay}s` }} />
+      <span
+        className="block h-0 w-0 border-y-[6px] border-y-transparent border-l-[9px] border-l-ink"
+        style={{ animation: 'fh-node-in 0.12s both', animationDelay: `${delay + 0.05}s` }}
+      />
+    </div>
+  )
+}
+
+function HeroFlow({ path, replayKey }) {
+  const steps = path.length ? path : ['—']
+  return (
+    <div key={replayKey} className="flex items-center overflow-x-auto px-4 py-6">
+      {steps.map((node, i) => {
+        const isTarget = i === steps.length - 1
+        const delay = i * 0.46
+        return (
+          <Fragment key={i}>
+            {i > 0 && <Connector delay={delay - 0.18} />}
+            <FlowNode label={node} target={isTarget} delay={delay} />
+          </Fragment>
+        )
+      })}
+    </div>
+  )
+}
+
+// One racer's path as a compact horizontal chain (scrolls sideways on mobile)
+function RacerRow({ rank, finisher }) {
+  const path = finisher.path || []
+  return (
+    <div className={`flex items-center gap-3 border-b-2 border-ink px-3 py-2 ${finisher.isMe ? 'border-l-[6px] border-l-red bg-red/10' : ''}`}>
+      <div className="w-28 flex-none font-display uppercase text-[13px]">
+        <span className={finisher.isMe ? 'text-red' : ''}>{String(rank).padStart(2, '0')}</span> · {finisher.name}
+        {finisher.isMe && <span className="ml-1 font-mono text-[8px]">(YOU)</span>}
+      </div>
+      <div className="flex flex-1 items-center gap-0 overflow-x-auto font-mono text-[9px]">
+        {path.length === 0 && <span className="text-ink/40">—</span>}
+        {path.map((n, i) => {
+          const last = i === path.length - 1
+          return (
+            <Fragment key={i}>
+              <span className={`flex-none border-2 border-ink px-1.5 py-0.5 whitespace-nowrap ${last ? 'bg-ink text-paper' : 'bg-paper'}`}>{n}</span>
+              {!last && <span className="flex-none px-1 text-ink/60">›</span>}
+            </Fragment>
+          )
+        })}
+      </div>
+      <div className="w-16 flex-none text-right font-mono text-[10px]">
+        {finisher.clicks}{finisher.time != null ? `·${finisher.time}s` : ''}
+      </div>
+    </div>
+  )
+}
 
 export default function ResultsScreen({ results }) {
   const router = useRouter()
   const [copied, setCopied] = useState(false)
-  const [sharedCopied, setSharedCopied] = useState(false)
+  const [shared, setShared] = useState(false)
+  const [replayKey, setReplayKey] = useState(0)
 
-  const { nodes, links } = useMemo(() => buildGraph(results.finishers), [results.finishers])
   const me = results.finishers.find(f => f.isMe) || results.finishers[0]
 
   const handleCopyPath = async () => {
-    const text = me?.path?.join(' → ') || ''
     try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // Clipboard permission denied — silently ignore
-    }
+      await navigator.clipboard.writeText(me?.path?.join(' → ') || '')
+      setCopied(true); setTimeout(() => setCopied(false), 2000)
+    } catch { /* clipboard blocked */ }
   }
 
   const handleShare = async () => {
     const lines = [
-      `🎯 Find Hitler — ${results.target}`,
-      ...results.finishers.map((f, i) => {
-        const medal = MEDALS[i] || '▪'
-        const time = f.time != null ? ` · ${f.time}s` : ''
-        return `${medal} ${f.name}: ${f.clicks} clicks${time}`
-      }),
+      `FIND HITLER — ${results.target}`,
+      ...results.finishers.map((f, i) => `${String(i + 1).padStart(2, '0')} ${f.name}: ${f.clicks} clicks${f.time != null ? ` · ${f.time}s` : ''}`),
     ]
     try {
       await navigator.clipboard.writeText(lines.join('\n'))
-      setSharedCopied(true)
-      setTimeout(() => setSharedCopied(false), 2000)
-    } catch {
-      // Clipboard permission denied — silently ignore
-    }
+      setShared(true); setTimeout(() => setShared(false), 2000)
+    } catch { /* clipboard blocked */ }
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white">
-      {/* Header */}
-      <div className="text-center pt-8 pb-4 border-b border-yellow-400/20">
-        <div className="text-3xl font-black text-yellow-400 tracking-tight">RACE COMPLETE</div>
-        <div className="text-red-400 font-mono text-sm mt-1">Target: {results.target}</div>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Node Graph */}
-        {nodes.length > 0 && <NodeGraph nodes={nodes} links={links} />}
-
-        {/* Finisher rows */}
-        <div className="space-y-2">
-          {results.finishers.map((f, i) => (
-            <div
-              key={i}
-              className={`flex items-center gap-3 px-4 py-2 rounded-lg font-mono text-sm ${
-                f.isMe ? 'bg-yellow-400/10 border border-yellow-400/30' : 'bg-[#1a1a2e]'
-              }`}
-            >
-              <span className="text-base">{MEDALS[i] || '▪'}</span>
-              <span
-                className="flex-1 font-bold"
-                style={{ color: getColor(i) }}
-              >
-                {f.name}{f.isMe ? ' (you)' : ''}
-              </span>
-              <span className="text-yellow-400">{f.clicks} clicks</span>
-              {f.time != null && <span className="text-gray-400">{f.time}s</span>}
-              {f.score != null && <span className="text-gray-300">{f.score.toLocaleString()} pts</span>}
-            </div>
-          ))}
+    <div className="min-h-screen bg-paper px-4 py-8">
+      <main className="mx-auto max-w-2xl border-4 border-ink bg-paper">
+        {/* header */}
+        <div className="flex items-center justify-between bg-ink px-4 py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-paper">
+          <span>Result · Your Path</span>
+          <span className="text-red">{me?.clicks} clicks{me?.time != null ? ` · ${me.time}s` : ''} · 1st</span>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={handleCopyPath}
-            className="flex-1 py-3 bg-[#1a1a2e] border border-yellow-400/40 hover:border-yellow-400 text-yellow-400 font-black rounded-xl uppercase tracking-widest text-sm transition-colors"
-          >
-            {copied ? 'Copied!' : 'Copy Path'}
+        {/* animated flowchart */}
+        <HeroFlow path={me?.path || []} replayKey={replayKey} />
+        <button
+          onClick={() => setReplayKey(k => k + 1)}
+          className="block w-full border-y-4 border-ink py-2.5 text-center font-display uppercase tracking-wide text-sm hover:bg-paper-dim cursor-pointer"
+        >
+          ▶ Replay Path
+        </button>
+
+        {/* all racers */}
+        <div className="flex items-center justify-between bg-ink px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.18em] text-paper">
+          <span>All Racers · {results.finishers.length}</span>
+          <span className="opacity-60">Scroll ↓ · Swipe →</span>
+        </div>
+        <div className="max-h-[280px] overflow-y-auto">
+          {results.finishers.map((f, i) => <RacerRow key={i} rank={i + 1} finisher={f} />)}
+        </div>
+
+        {/* actions */}
+        <div className="grid grid-cols-2 gap-[3px] border-t-4 border-ink bg-ink">
+          <button onClick={handleCopyPath} className="bg-paper py-3 font-display uppercase tracking-wide text-sm hover:bg-paper-dim cursor-pointer">
+            {copied ? 'Copied ✓' : 'Copy Path'}
           </button>
-          <button
-            onClick={handleShare}
-            className="flex-1 py-3 bg-[#1a1a2e] border border-yellow-400/40 hover:border-yellow-400 text-yellow-400 font-black rounded-xl uppercase tracking-widest text-sm transition-colors"
-          >
-            {sharedCopied ? 'Copied!' : 'Share'}
-          </button>
-          <button
-            onClick={() => router.push('/')}
-            className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl uppercase tracking-widest text-sm transition-colors"
-          >
-            Play Again
+          <button onClick={handleShare} className="bg-paper py-3 font-display uppercase tracking-wide text-sm hover:bg-paper-dim cursor-pointer">
+            {shared ? 'Copied ✓' : 'Share'}
           </button>
         </div>
-      </div>
+        <RedButton onClick={() => router.push('/')}>Play Again →</RedButton>
+      </main>
     </div>
   )
 }

@@ -3,27 +3,19 @@ import { useEffect, useState } from 'react'
 
 export default function EloChange({ delta, oldElo, newElo }) {
   const [visible, setVisible] = useState(true)
-
   useEffect(() => {
     const t = setTimeout(() => setVisible(false), 4000)
     return () => clearTimeout(t)
   }, [])
-
   if (!visible) return null
 
   const isGain = delta > 0
   return (
-    <div
-      className={`fixed top-20 right-8 z-50 font-black font-mono text-2xl animate-bounce px-4 py-2 rounded-xl border-2 shadow-lg ${
-        isGain
-          ? 'text-green-400 border-green-400/40 bg-green-400/10'
-          : 'text-red-400 border-red-400/40 bg-red-400/10'
-      }`}
-    >
-      {isGain ? '+' : ''}{delta} ELO
-      <div className="text-xs font-normal opacity-70 text-center mt-0.5">
-        {oldElo} → {newElo}
+    <div className={`fixed right-6 top-24 z-50 border-[3px] px-4 py-2 text-center ${isGain ? 'border-ink bg-paper text-ink' : 'border-red bg-red text-paper'}`}>
+      <div className="font-display text-2xl leading-none">
+        {isGain ? '+' : ''}{delta} <span className="text-base">ELO</span>
       </div>
+      <div className="mt-1 font-mono text-[10px] uppercase tracking-wide opacity-70">{oldElo} → {newElo}</div>
     </div>
   )
 }

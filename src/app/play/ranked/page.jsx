@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import WikiArticle from '@/components/WikiArticle'
-import GameHUD from '@/components/GameHUD'
 import HpDuelHUD from '@/components/HpDuelHUD'
 import EloChange from '@/components/EloChange'
 import { useSocket } from '@/hooks/useSocket'
@@ -91,63 +90,40 @@ function RankedGame() {
   }, [gameState, isLoading, duelFinished])
 
   if (!gameState) {
-    return <div className="flex items-center justify-center min-h-screen font-mono text-gray-400">Loading...</div>
+    return <div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-widest text-ink/60">Loading…</div>
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] pb-24">
+    <div className="min-h-screen bg-paper">
+      {/* HpDuelHUD is the top bar for ranked (no GameHUD to avoid a double top bar) */}
       <HpDuelHUD duelPlayers={duelPlayers} myId={myIdRef.current} round={round} />
 
-      {isLoading && (
-        <div className="fixed top-0 left-0 right-0 h-[3px] z-[999] bg-gradient-to-r from-red-500 via-yellow-400 to-red-500 animate-pulse" />
-      )}
+      {isLoading && <div className="fixed inset-x-0 top-0 z-50 h-1 bg-red" />}
 
-      <GameHUD
-        startPage={gameState.startPage}
-        target={gameState.target}
-        mode="ranked"
-        clicks={clicks}
-        undoTokens={undoTokens}
-        onUndo={() => {}}
-      />
+      <main className="mx-auto max-w-3xl px-5 pb-24 pt-28">
+        <WikiArticle html={html} onNavigate={handleNavigate} disabled={isLoading || !!duelFinished} />
+      </main>
 
-      <div className="max-w-3xl mx-auto pt-32 px-6">
-        <WikiArticle
-          html={html}
-          onNavigate={handleNavigate}
-          disabled={isLoading || !!duelFinished}
-        />
+      {/* minimal clicks chip (undo not available in duels) */}
+      <div className="fixed bottom-0 inset-x-0 z-40 flex items-center justify-between border-t-4 border-ink bg-paper px-4 py-3 pb-safe font-mono text-[10px] uppercase tracking-widest text-ink/60">
+        <span>Round {round}</span>
+        <span>{clicks} clicks · reach {gameState.target}</span>
       </div>
 
       {eloChange !== null && session?.user && (
-        <EloChange
-          delta={eloChange}
-          oldElo={(session.user.elo || 1000) - eloChange}
-          newElo={session.user.elo || 1000}
-        />
+        <EloChange delta={eloChange} oldElo={(session.user.elo || 1000) - eloChange} newElo={session.user.elo || 1000} />
       )}
 
       {duelFinished && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-[#0d1117] border border-yellow-400/30 rounded-2xl px-10 py-8 text-center space-y-4 max-w-sm">
-            <div className="text-5xl">{duelFinished.isWinner ? '🏆' : '💀'}</div>
-            <h2 className="text-3xl font-black text-yellow-400">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 px-4">
+          <div className="w-full max-w-sm border-4 border-ink bg-paper px-8 py-8 text-center">
+            <h2 className={`text-[clamp(2.5rem,12vw,4rem)] ${duelFinished.isWinner ? 'text-red' : 'text-ink/50'}`}>
               {duelFinished.isWinner ? 'VICTORY' : 'DEFEAT'}
             </h2>
-            <p className="text-gray-400 font-mono text-sm">Duel complete · ELO updated</p>
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => router.push('/ranked')}
-                className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl uppercase tracking-widest text-sm"
-              >
-                Play Again
-              </button>
-              <button
-                onClick={() => router.push('/profile')}
-                className="flex-1 py-3 bg-[#1a1a2e] border border-yellow-400/30 hover:border-yellow-400 text-yellow-400 font-black rounded-xl uppercase tracking-widest text-sm"
-              >
-                Profile
-              </button>
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Duel complete · ELO updated</p>
+            <div className="mt-6 grid grid-cols-2 gap-[3px] bg-ink">
+              <button onClick={() => router.push('/ranked')} className="bg-red py-3 font-display uppercase text-sm tracking-wide text-paper hover:brightness-110 cursor-pointer">Play Again</button>
+              <button onClick={() => router.push('/profile')} className="bg-paper py-3 font-display uppercase text-sm tracking-wide hover:bg-paper-dim cursor-pointer">Profile</button>
             </div>
           </div>
         </div>
@@ -158,7 +134,7 @@ function RankedGame() {
 
 export default function RankedPlayPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-widest text-ink/60">Loading…</div>}>
       <RankedGame />
     </Suspense>
   )

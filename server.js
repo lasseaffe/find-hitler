@@ -23,7 +23,8 @@ app.prepare().then(() => {
   setupSocketHandlers(io)
   setInterval(tickSearchRanges, 30_000)
 
-  httpServer.listen(3004, () => {
-    console.log('> Find Hitler running on http://localhost:3004')
+  const port = Number(process.env.PORT) || 3004
+  httpServer.listen(port, '0.0.0.0', () => {
+    console.log(`> Find Hitler running on :${port}`)
   })
 })

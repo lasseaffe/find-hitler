@@ -1,26 +1,30 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { hasPlayedDailyToday } from '@/lib/dailyChallenge'
+import { Frame, Rule, MonoLabel, SelectCell, ToggleRow, RedButton } from '@/components/ui/primitives'
+import HitlerMark from '@/components/ui/HitlerMark'
+import CrowdIntro from '@/components/intro/CrowdIntro'
+import { primeAudio } from '@/lib/sfx'
 
 const TARGETS = [
-  { label: 'Adolf Hitler', category: 'Historical' },
+  { label: 'Adolf Hitler', category: 'Historical', featured: true },
   { label: 'Jesus', category: 'Religion' },
   { label: 'Joseph Stalin', category: 'Historical' },
-  { label: '9/11 attacks', category: 'Controversial' },
   { label: 'Taylor Swift', category: 'Pop Culture' },
-  { label: 'Black hole', category: 'Science' },
   { label: 'Minecraft', category: 'Internet' },
+  { label: 'Black hole', category: 'Science' },
+  { label: '9/11 attacks', category: 'Controversial' },
   { label: 'Holocaust', category: 'Controversial' },
 ]
 
 const MODES = [
-  { value: 'classic', label: 'Classic', desc: 'Fewest clicks wins. Random start page.' },
-  { value: 'speedrun', label: 'Speedrun', desc: 'Fastest time wins. Curated start page.' },
-  { value: 'golf', label: 'Golf', desc: '5-min cap. Lowest click count wins.' },
-  { value: 'jesus', label: '5 Clicks to Jesus', desc: '5 rounds, par = 5 clicks. Target is always Jesus.' },
-  { value: 'daily', label: 'Daily Challenge', desc: 'Same pages for everyone today. One attempt.' },
-  { value: 'nohub', label: 'No-Hub', desc: 'Hub pages bounce you back and cost an undo token.' },
+  { value: 'classic', label: 'Classic', desc: 'FEWEST CLICKS · RANDOM START' },
+  { value: 'speedrun', label: 'Speedrun', desc: 'FASTEST TIME · CURATED START' },
+  { value: 'golf', label: 'Golf', desc: '5-MIN CAP · LOWEST CLICKS' },
+  { value: 'jesus', label: '5 Clicks to Jesus', desc: 'PAR · 5 ROUNDS · TARGET = JESUS' },
+  { value: 'daily', label: 'Daily Challenge', desc: 'ONE ATTEMPT · SAME FOR ALL' },
+  { value: 'nohub', label: 'No-Hub', desc: 'HUBS BOUNCE YOU · COST AN UNDO' },
 ]
 
 export default function HomePage() {
@@ -33,181 +37,169 @@ export default function HomePage() {
   const [botCount, setBotCount] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showIntro, setShowIntro] = useState(false)
+  const startReq = useRef(null)
 
   const targetLocked = mode === 'jesus' || mode === 'daily'
   const alreadyPlayedDaily = mode === 'daily' && hasPlayedDailyToday()
 
-  const handleStart = async () => {
-    if (!playerName.trim()) { setError('Enter your name to continue'); return }
+  const handleStart = () => {
+    if (!playerName.trim()) { setError('Enter a codename to continue'); return }
     setError('')
-    setLoading(true)
 
     if (playType === 'solo') {
-      try {
+      primeAudio() // unlock audio inside the click gesture
+      setLoading(true)
+      // kick off the page fetch concurrently; the intro covers the latency
+      startReq.current = (async () => {
         const res = await fetch('/api/game/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ target, mode, playerName: playerName.trim(), hardcore }),
         })
         const data = await res.json()
-        if (!res.ok) { setError(data.error || 'Server error'); setLoading(false); return }
-        sessionStorage.setItem('gameInit', JSON.stringify({ ...data, target: data.target || target, mode, hardcore }))
-        router.push('/play')
-      } catch {
-        setError('Could not reach server — is it running?')
-        setLoading(false)
-      }
+        if (!res.ok) throw new Error(data.error || 'Server error')
+        return { ...data, target: data.target || target, mode, hardcore }
+      })()
+      setShowIntro(true)
     } else {
       sessionStorage.setItem('lobbyConfig', JSON.stringify({ playerName: playerName.trim(), mode, target, botCount, hardcore }))
       router.push('/lobby/new')
     }
   }
 
+  const handleIntroDone = async () => {
+    try {
+      const data = await startReq.current
+      sessionStorage.setItem('gameInit', JSON.stringify(data))
+      router.push('/play')
+    } catch (e) {
+      setShowIntro(false)
+      setLoading(false)
+      setError(e?.message === 'Failed to fetch' ? 'Could not reach server — is it running?' : (e?.message || 'Server error'))
+    }
+  }
+
+  if (showIntro) return <CrowdIntro onDone={handleIntroDone} />
+
   return (
-    <div className="relative min-h-screen bg-[#0d1117] text-white flex flex-col items-center justify-center px-4 py-12">
-      <div className="absolute top-4 right-4 flex items-center gap-4">
-        <a
-          href="/ranked"
-          className="text-red-400/70 hover:text-red-400 font-mono text-xs uppercase tracking-widest transition-colors"
-        >
-          ⚔ Ranked
-        </a>
-        <a
-          href="/leaderboard"
-          className="text-yellow-400/70 hover:text-yellow-400 font-mono text-xs uppercase tracking-widest transition-colors"
-        >
-          Leaderboard →
-        </a>
-      </div>
-      <div className="text-center mb-10">
-        <h1 className="text-6xl font-black text-yellow-400 tracking-tighter mb-2">FIND HITLER</h1>
-        <p className="text-gray-400 font-mono text-sm tracking-widest uppercase">WikiRace · Taboo Edition</p>
-      </div>
-
-      <div className="w-full max-w-md space-y-6">
-
-        <div className="flex rounded-lg overflow-hidden border border-gray-700">
-          {['solo', 'multi'].map(t => (
-            <button
-              key={t}
-              onClick={() => setPlayType(t)}
-              className={`flex-1 py-2 text-sm font-bold font-mono uppercase tracking-widest transition-colors ${
-                playType === t ? 'bg-yellow-400 text-black' : 'bg-[#1a1a2e] text-gray-400 hover:text-white'
-              }`}
-            >
-              {t === 'solo' ? 'Solo' : 'Multiplayer'}
-            </button>
-          ))}
-        </div>
-
-        <div>
-          <label className="block text-xs font-mono uppercase tracking-widest text-gray-400 mb-2">Your Name</label>
-          <input
-            value={playerName}
-            onChange={e => setPlayerName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleStart()}
-            placeholder="Enter nickname..."
-            className="w-full bg-[#1a1a2e] border border-gray-600 rounded-lg px-4 py-3 text-white font-mono focus:outline-none focus:border-yellow-400"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-mono uppercase tracking-widest text-gray-400 mb-2">Target Page</label>
-          <div className={`grid grid-cols-2 gap-2 ${targetLocked ? 'opacity-40 pointer-events-none' : ''}`}>
-            {TARGETS.map(t => (
-              <button
-                key={t.label}
-                onClick={() => setTarget(t.label)}
-                className={`px-3 py-2 rounded-lg text-sm font-bold text-left transition-all border ${
-                  target === t.label
-                    ? 'bg-red-600 border-red-400 text-white'
-                    : 'bg-[#1a1a2e] border-gray-700 text-gray-300 hover:border-gray-500'
-                }`}
-              >
-                <div>{t.label}</div>
-                <div className="text-[10px] font-normal opacity-60">{t.category}</div>
-              </button>
-            ))}
-          </div>
-          {targetLocked && (
-            <p className="text-xs font-mono text-yellow-400 mt-1">
-              {mode === 'jesus' ? 'Target fixed: Jesus' : 'Target selected by daily seed'}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-xs font-mono uppercase tracking-widest text-gray-400 mb-2">Game Mode</label>
-          <div className="space-y-2">
-            {MODES.map(m => (
-              <button
-                key={m.value}
-                onClick={() => setMode(m.value)}
-                className={`w-full px-4 py-3 rounded-lg text-left transition-all border ${
-                  mode === m.value
-                    ? 'bg-yellow-400/10 border-yellow-400 text-yellow-400'
-                    : 'bg-[#1a1a2e] border-gray-700 text-gray-300 hover:border-gray-500'
-                }`}
-              >
-                <div className="font-bold text-sm">{m.label}</div>
-                <div className="text-[11px] opacity-60">{m.desc}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button
-          onClick={() => setHardcore(h => !h)}
-          className={`w-full px-4 py-3 rounded-lg text-left transition-all border ${
-            hardcore
-              ? 'bg-red-900/40 border-red-500 text-red-400'
-              : 'bg-[#1a1a2e] border-gray-700 text-gray-400 hover:border-gray-500'
-          }`}
-        >
-          <div className="font-bold text-sm flex items-center gap-2">
-            <span>{hardcore ? '☠ HARDCORE ON' : '☠ Hardcore Modifier'}</span>
-          </div>
-          <div className="text-[11px] opacity-60">0 undos · time caps halved · max pain</div>
-        </button>
-
-        {playType === 'multi' && (
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-widest text-gray-400 mb-2">
-              Bot Opponents: {botCount}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={3}
-              value={botCount}
-              onChange={e => setBotCount(Number(e.target.value))}
-              className="w-full accent-yellow-400"
-            />
-            <div className="flex justify-between text-[10px] text-gray-500 font-mono mt-1">
-              <span>0 bots</span><span>3 bots</span>
+    <div className="min-h-screen bg-paper px-4 py-8 sm:py-12">
+      <main className="mx-auto max-w-2xl">
+        <Frame>
+          {/* MASTHEAD */}
+          <div className="flex items-center gap-4 px-5 py-5 border-b-4 border-ink">
+            <HitlerMark size={56} className="flex-none" />
+            <div className="flex-1">
+              <h1 className="text-[clamp(2rem,9vw,2.75rem)] leading-[0.82]">Find Hitler</h1>
+              <MonoLabel className="mt-1.5 block">Wikirace · Taboo Edition</MonoLabel>
+            </div>
+            <div className="hidden sm:flex flex-col items-end gap-2">
+              <a href="/ranked" className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/70 hover:text-red">⚔ Ranked</a>
+              <a href="/leaderboard" className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/70 hover:text-red">Leaderboard →</a>
             </div>
           </div>
-        )}
 
-        {error && <p className="text-red-400 text-sm font-mono text-center">{error}</p>}
+          {/* SOLO / MULTIPLAYER */}
+          <div className="grid grid-cols-2 border-b-4 border-ink">
+            {[['solo', 'Solo'], ['multi', 'Multiplayer']].map(([val, lbl], i) => (
+              <button
+                key={val}
+                onClick={() => setPlayType(val)}
+                className={`min-h-[48px] py-3.5 text-center font-display uppercase tracking-[0.06em] text-base cursor-pointer ${i === 1 ? 'border-l-4 border-ink' : ''} ${playType === val ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-paper-dim'}`}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
 
-        <button
-          onClick={handleStart}
-          disabled={loading || alreadyPlayedDaily}
-          className="w-full py-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-black text-lg rounded-xl uppercase tracking-widest transition-colors shadow-[0_0_30px_rgba(192,57,43,0.4)]"
-        >
-          {loading
-            ? 'Connecting...'
-            : alreadyPlayedDaily
-            ? 'Already played today ✓'
-            : playType === 'solo' ? 'Start Race →' : 'Create Lobby →'}
-        </button>
-        {alreadyPlayedDaily && (
-          <p className="text-yellow-400/70 font-mono text-xs text-center">
-            Come back tomorrow for a new challenge.
-          </p>
-        )}
-      </div>
+          {/* CODENAME */}
+          <div className="px-5 py-4 border-b-4 border-ink">
+            <MonoLabel className="block mb-2">Codename</MonoLabel>
+            <input
+              value={playerName}
+              onChange={e => setPlayerName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleStart()}
+              placeholder="enter codename"
+              className="w-full border-[3px] border-ink bg-paper px-3 py-2.5 font-mono text-sm text-ink placeholder:text-ink/40 outline-none focus:bg-paper-dim caret-red"
+            />
+          </div>
+
+          {/* TARGET */}
+          <div className="px-5 py-4 border-b-4 border-ink">
+            <MonoLabel className="block mb-2.5">Target</MonoLabel>
+            <div className={`grid grid-cols-2 sm:grid-cols-3 gap-[3px] bg-ink border-[3px] border-ink ${targetLocked ? 'opacity-40 pointer-events-none' : ''}`}>
+              {TARGETS.map(t => {
+                const sel = target === t.label
+                return (
+                  <SelectCell key={t.label} selected={sel} onClick={() => setTarget(t.label)} className="flex flex-col justify-center">
+                    {t.featured && <HitlerMark size={26} fill={sel ? 'var(--color-paper)' : 'var(--color-ink)'} className="mb-1" />}
+                    <span className="font-display uppercase text-[13px] leading-none">{t.label}</span>
+                    <MonoLabel className={`mt-1 block ${sel ? 'text-paper/70' : ''}`}>{t.category}</MonoLabel>
+                  </SelectCell>
+                )
+              })}
+              {/* filler so the 3-col grid's empty slot isn't an ink block (hidden at 2-col) */}
+              <div className="hidden sm:block bg-paper" aria-hidden />
+            </div>
+            {targetLocked && (
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-red">
+                {mode === 'jesus' ? 'Target fixed: Jesus' : 'Target set by daily seed'}
+              </p>
+            )}
+          </div>
+
+          {/* GAME MODE */}
+          <div className="px-5 py-4 border-b-4 border-ink">
+            <MonoLabel className="block mb-2.5">Game Mode</MonoLabel>
+            <div className="flex flex-col gap-[3px] bg-ink border-[3px] border-ink">
+              {MODES.map(m => {
+                const sel = mode === m.value
+                return (
+                  <SelectCell key={m.value} selected={sel} onClick={() => setMode(m.value)} className="flex items-center justify-between gap-3">
+                    <span className="font-display uppercase text-sm">{m.label}</span>
+                    <MonoLabel className={`text-[9px] ${sel ? 'text-paper/70' : ''}`}>{m.desc}</MonoLabel>
+                  </SelectCell>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* HARDCORE */}
+          <div className="border-b-4 border-ink">
+            <ToggleRow
+              label="Hardcore Modifier"
+              sublabel="0 undos · time caps halved · max pain"
+              checked={hardcore}
+              onChange={setHardcore}
+            />
+          </div>
+
+          {/* BOTS (multi only) */}
+          {playType === 'multi' && (
+            <div className="px-5 py-4 border-b-4 border-ink">
+              <MonoLabel className="block mb-2">Bot Opponents: {botCount}</MonoLabel>
+              <input
+                type="range" min={0} max={3} value={botCount}
+                onChange={e => setBotCount(Number(e.target.value))}
+                className="w-full accent-red"
+              />
+              <div className="mt-1 flex justify-between font-mono text-[9px] text-ink/50"><span>0 BOTS</span><span>3 BOTS</span></div>
+            </div>
+          )}
+
+          {error && <p className="px-5 py-3 font-mono text-xs text-red border-b-4 border-ink">{error}</p>}
+
+          <RedButton onClick={handleStart} disabled={loading || alreadyPlayedDaily}>
+            {loading ? 'Connecting…' : alreadyPlayedDaily ? 'Already played today ✓' : playType === 'solo' ? 'Start Race →' : 'Create Lobby →'}
+          </RedButton>
+        </Frame>
+
+        {/* mobile nav (masthead links are desktop-only) */}
+        <div className="sm:hidden mt-3 grid grid-cols-2 gap-3">
+          <a href="/ranked" className="border-[3px] border-ink py-2.5 text-center font-mono text-[10px] uppercase tracking-[0.18em]">⚔ Ranked</a>
+          <a href="/leaderboard" className="border-[3px] border-ink py-2.5 text-center font-mono text-[10px] uppercase tracking-[0.18em]">Leaderboard →</a>
+        </div>
+      </main>
     </div>
   )
 }

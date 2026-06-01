@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import RankBadge from '@/components/RankBadge'
+import HitlerMark from '@/components/ui/HitlerMark'
 
 function formatSeconds(s) {
   if (!s) return '—'
@@ -10,6 +11,10 @@ function formatSeconds(s) {
   const sec = s % 60
   return m > 0 ? `${m}m ${sec}s` : `${sec}s`
 }
+
+const loadingScreen = (
+  <div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-widest text-ink/60">Loading…</div>
+)
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
@@ -20,70 +25,69 @@ export default function ProfilePage() {
   useEffect(() => {
     if (status === 'unauthenticated') { router.push('/login'); return }
     if (status !== 'authenticated') return
-    fetch('/api/profile')
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false) })
-      .catch(() => setLoading(false))
+    fetch('/api/profile').then(r => r.json()).then(d => { setData(d); setLoading(false) }).catch(() => setLoading(false))
   }, [status, router])
 
-  if (loading || status === 'loading') {
-    return <div className="min-h-screen bg-[#0d1117] flex items-center justify-center text-gray-400 font-mono">Loading...</div>
-  }
-
+  if (loading || status === 'loading') return loadingScreen
   if (!data?.user) {
-    return <div className="min-h-screen bg-[#0d1117] flex items-center justify-center text-gray-400 font-mono">No profile data.</div>
+    return <div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-widest text-ink/60">No profile data.</div>
   }
 
   const { user, matches, stats } = data
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white">
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-black text-yellow-400">{user.name || user.email}</h1>
-            <p className="text-gray-500 font-mono text-sm mt-0.5">{user.email}</p>
+    <div className="min-h-screen bg-paper px-4 py-8">
+      <main className="mx-auto max-w-3xl border-4 border-ink bg-paper">
+        {/* masthead */}
+        <div className="flex items-center justify-between border-b-4 border-ink px-5 py-4">
+          <div className="flex items-center gap-3">
+            <HitlerMark size={44} />
+            <div>
+              <div className="font-mono text-[8px] uppercase tracking-widest text-ink/60">Codename</div>
+              <h1 className="text-2xl">{user.name || user.email}</h1>
+            </div>
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            className="px-4 py-2 border border-red-500/40 hover:border-red-500 text-red-400 font-mono text-xs uppercase tracking-widest rounded-lg transition-colors"
-          >
+          <button onClick={() => signOut({ callbackUrl: '/' })} className="border-[3px] border-ink px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest hover:bg-paper-dim cursor-pointer">
             Sign Out
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'ELO', value: <RankBadge rank={user.rank} elo={user.elo} size="md" /> },
-            { label: 'Matches', value: stats.totalMatches },
-            { label: 'Win Rate', value: `${stats.winRate}%` },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-[#1a1a2e] border border-gray-700 rounded-xl p-4 text-center">
-              <div className="text-gray-400 font-mono text-xs uppercase tracking-widest mb-2">{label}</div>
-              <div className="text-white font-black text-xl">{value}</div>
-            </div>
-          ))}
+        {/* stat grid */}
+        <div className="grid grid-cols-3 gap-[3px] border-b-4 border-ink bg-ink">
+          <div className="bg-paper px-4 py-4 text-center">
+            <div className="mb-2 font-mono text-[8px] uppercase tracking-widest text-ink/60">Rank</div>
+            <RankBadge rank={user.rank} elo={user.elo} size="sm" />
+          </div>
+          <div className="bg-paper px-4 py-4 text-center">
+            <div className="mb-2 font-mono text-[8px] uppercase tracking-widest text-ink/60">Matches</div>
+            <div className="font-display text-2xl">{stats.totalMatches}</div>
+          </div>
+          <div className="bg-paper px-4 py-4 text-center">
+            <div className="mb-2 font-mono text-[8px] uppercase tracking-widest text-ink/60">Win Rate</div>
+            <div className="font-display text-2xl text-red">{stats.winRate}%</div>
+          </div>
         </div>
 
-        <div>
-          <h2 className="text-lg font-black text-white mb-4 uppercase tracking-widest font-mono">Match History</h2>
+        {/* match history */}
+        <div className="px-5 py-4">
+          <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Match History</div>
           {matches.length === 0 ? (
-            <div className="bg-[#1a1a2e] border border-gray-700 rounded-xl p-8 text-center text-gray-500 font-mono text-sm">
-              No matches yet. <a href="/" className="text-yellow-400 hover:underline">Play a race</a> to get started.
+            <div className="border-[3px] border-ink px-6 py-8 text-center font-mono text-xs text-ink/60">
+              No matches yet. <a href="/" className="text-red underline">Play a race</a> to begin.
             </div>
           ) : (
-            <div className="space-y-2">
-              {matches.map(m => (
-                <div key={m.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl font-mono text-sm border ${m.won ? 'bg-green-900/10 border-green-500/20' : 'bg-[#1a1a2e] border-gray-700'}`}>
-                  <span className="text-base">{m.won ? '✅' : '❌'}</span>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-bold text-white">{m.target}</span>
-                    <span className="text-gray-500 ml-2 text-xs uppercase">{m.mode}</span>
+            <div className="border-[3px] border-ink">
+              {matches.map((m, i) => (
+                <div key={m.id} className={`flex items-center gap-3 px-4 py-2.5 font-mono text-xs ${i > 0 ? 'border-t-2 border-ink' : ''} ${m.won ? '' : 'bg-paper-dim'}`}>
+                  <span className={`font-display ${m.won ? 'text-red' : 'text-ink/50'}`}>{m.won ? 'WON' : 'LOST'}</span>
+                  <div className="min-w-0 flex-1 truncate">
+                    <span className="font-display uppercase">{m.target}</span>
+                    <span className="ml-2 uppercase text-ink/50">{m.mode}</span>
                   </div>
-                  <span className="text-gray-300 shrink-0">{m.clicks} clicks</span>
-                  <span className="text-gray-500 shrink-0">{formatSeconds(m.seconds)}</span>
+                  <span className="flex-none">{m.clicks} clk</span>
+                  <span className="flex-none text-ink/50">{formatSeconds(m.seconds)}</span>
                   {m.eloChange !== 0 && (
-                    <span className={`font-black shrink-0 ${m.eloChange > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <span className={`flex-none font-display ${m.eloChange > 0 ? 'text-red' : 'text-ink/50'}`}>
                       {m.eloChange > 0 ? '+' : ''}{m.eloChange}
                     </span>
                   )}
@@ -93,15 +97,11 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <div className="flex gap-3">
-          <a href="/" className="px-6 py-2 border border-yellow-400/30 hover:border-yellow-400 text-yellow-400 font-black rounded-xl uppercase tracking-widest text-xs transition-colors">
-            ← Home
-          </a>
-          <a href="/ranked" className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl uppercase tracking-widest text-xs transition-colors">
-            Ranked Duels ⚔
-          </a>
+        <div className="grid grid-cols-2 gap-[3px] border-t-4 border-ink bg-ink">
+          <a href="/" className="bg-paper py-3 text-center font-display uppercase text-sm tracking-wide hover:bg-paper-dim">← Home</a>
+          <a href="/ranked" className="bg-red py-3 text-center font-display uppercase text-sm tracking-wide text-paper hover:brightness-110">Ranked Duels ⚔</a>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

@@ -1,12 +1,93 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@keyframes shimmer {
-  0%   { background-position: 0% }
-  100% { background-position: 200% }
+/* ── Brutalist / Newsprint design tokens ─────────────────────────── */
+@theme {
+  --color-paper: #f5f0e8;
+  --color-ink: #0e0e0e;
+  --color-red: #e5241e;
+  --color-paper-dim: #e7e0d4;
+  --color-ink-soft: #0e0e0eaa;
+
+  /* heavy-rule border weights */
+  --border-rule: 4px;
+  --border-cell: 3px;
 }
 
-.animate-shimmer {
-  animation: shimmer 1.2s linear infinite;
+/* fonts resolve against next/font CSS vars set on <html> */
+@theme inline {
+  --font-display: var(--font-anton), Impact, "Arial Black", sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, "Courier New", monospace;
+  --font-sans: ui-sans-serif, system-ui, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
 }
+
+/* ── Base ────────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 0.9;
+  }
+  /* the interactive targets in the race — Wikipedia links */
+  .wiki a {
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+  .wiki a:hover,
+  .wiki a:focus-visible {
+    color: var(--color-red);
+    text-decoration-color: var(--color-red);
+    background: #e5241e1a;
+    outline: none;
+  }
+}
+
+/* ── Safe-area helpers (PWA / notch / home indicator) ───────────── */
+@utility pt-safe { padding-top: env(safe-area-inset-top); }
+@utility pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+@utility pl-safe { padding-left: env(safe-area-inset-left); }
+@utility pr-safe { padding-right: env(safe-area-inset-right); }
+
+/* ── Shared keyframes ────────────────────────────────────────────── */
+@keyframes fh-node-in {
+  0%   { opacity: 0; transform: translateX(-10px) scale(0.92); }
+  60%  { transform: translateX(0) scale(1.05); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes fh-line-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes fh-target-flash {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  40%      { box-shadow: 0 0 0 6px var(--color-red); }
+}
+/* win reveal */
+@keyframes fh-snap {
+  0%   { opacity: 0; transform: scale(0.82); }
+  60%  { transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes fh-shudder {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-2px); }
+  75%      { transform: translateX(2px); }
+}
+
+/* ── Reduced-motion: collapse animations to instant final states ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* legacy (kept; harmless) */
+@keyframes shimmer { 0% { background-position: 0%; } 100% { background-position: 200%; } }
+.animate-shimmer { animation: shimmer 1.2s linear infinite; }

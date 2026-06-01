@@ -1,0 +1,22 @@
+# Fly.io config — ~$2/mo always-on (no cold start). `fly launch --no-deploy` then `fly deploy`.
+app = "find-hitler"
+primary_region = "iad"   # change to your nearest region (fly platform regions)
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3004"
+
+[http_service]
+  internal_port = 3004
+  force_https = true
+  # set min_machines_running = 1 for true always-on; 0 lets it scale to zero (cheaper, adds cold start)
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

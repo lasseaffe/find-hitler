@@ -1,6 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
+import HitlerMark from '@/components/ui/HitlerMark'
 
+// Brutalist race HUD: a fixed top data-bar (wraps to 2 rows on mobile) + a fixed
+// bottom action bar (UNDO is thumb-reachable on mobile, a footer control on desktop).
 export default function GameHUD({ startPage, target, mode, clicks, undoTokens, onUndo, timeLimitSeconds, jesusRound, onTimeUp }) {
   const [elapsed, setElapsed] = useState(0)
 
@@ -19,72 +22,64 @@ export default function GameHUD({ startPage, target, mode, clicks, undoTokens, o
   const remaining = timeLimitSeconds ? Math.max(0, timeLimitSeconds - elapsed) : null
   const mins = remaining !== null ? String(Math.floor(remaining / 60)).padStart(2, '0') : null
   const secs = remaining !== null ? String(remaining % 60).padStart(2, '0') : null
-  const timerDanger = remaining !== null && remaining <= 30
+  const danger = remaining !== null && remaining <= 30
 
   return (
     <>
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-white/85 backdrop-blur border border-black/10 rounded-full px-5 py-2 shadow text-sm font-black tracking-wide whitespace-nowrap">
-        <span className="text-gray-700">{startPage}</span>
-        <span className="text-gray-400 text-base">──→</span>
-        <span className="text-red-600 italic">{target}</span>
-      </div>
-
-      <div className="fixed top-3 right-3 z-50 w-52">
-        <div className="bg-[#1a1a2e] border-2 border-red-500 rounded-lg p-3 font-mono text-white space-y-1">
-          <div className="flex justify-between items-center">
-            <span className="text-[9px] uppercase tracking-widest text-gray-400">Clicks</span>
-            <span className="text-xl font-bold text-yellow-400">{clicks}</span>
+      {/* TOP DATA BAR */}
+      <header className="fixed inset-x-0 top-0 z-40 border-b-4 border-ink bg-ink text-paper pt-safe">
+        <div className="flex flex-wrap items-stretch font-mono text-[10px] leading-none">
+          <div className="flex items-center gap-2 px-3 py-2.5 border-r border-paper/20 min-w-0">
+            <HitlerMark size={20} fill="var(--color-paper)" className="flex-none" />
+            <div className="min-w-0">
+              <div className="text-[8px] uppercase tracking-widest text-paper/50">Target</div>
+              <div className="truncate font-display text-xs uppercase tracking-wide">{target}</div>
+            </div>
           </div>
-          <hr className="border-[#2a2a3e]" />
-          <div className="flex justify-between items-center">
-            <span className="text-[9px] uppercase tracking-widest text-gray-400">Mode</span>
-            <span className="text-[10px] text-yellow-400 uppercase">{mode}</span>
+          <div className="hidden sm:flex flex-1 items-center gap-1 px-3 py-2.5 border-r border-paper/20 min-w-0">
+            <span className="text-paper/50">PATH</span>
+            <span className="truncate">{startPage} <span className="text-paper/40">›</span> …</span>
           </div>
-          {jesusRound !== null && jesusRound !== undefined && (
-            <>
-              <hr className="border-[#2a2a3e]" />
-              <div className="flex justify-between items-center">
-                <span className="text-[9px] uppercase tracking-widest text-gray-400">Round</span>
-                <span className="text-[10px] text-purple-400 font-bold">{jesusRound} / 5</span>
-              </div>
-            </>
+          <div className="flex items-center gap-1.5 px-3 py-2.5 border-r border-paper/20">
+            <span className="text-paper/50">CLICKS</span>
+            <span className="font-display text-base">{clicks}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-2.5 border-r border-paper/20">
+            <span className="text-paper/50">UNDO</span>
+            <span className="flex gap-1">
+              {[0, 1, 2].map(i => (
+                <span key={i} className={`h-2.5 w-2.5 ${i < undoTokens ? 'bg-paper' : 'bg-paper/25'}`} />
+              ))}
+            </span>
+          </div>
+          {jesusRound != null && (
+            <div className="flex items-center gap-1.5 px-3 py-2.5 border-r border-paper/20">
+              <span className="text-paper/50">ROUND</span>
+              <span className="font-display text-base">{jesusRound}<span className="text-paper/40 text-xs"> / 5</span></span>
+            </div>
           )}
           {remaining !== null && (
-            <>
-              <hr className="border-[#2a2a3e]" />
-              <div className="flex justify-between items-center">
-                <span className="text-[9px] uppercase tracking-widest text-gray-400">Time Left</span>
-                <span className={`text-sm font-bold ${timerDanger ? 'text-red-400 animate-pulse' : 'text-green-400'}`}>
-                  {mins}:{secs}
-                </span>
-              </div>
-            </>
+            <div className={`flex items-center gap-1.5 px-3 py-2.5 ${danger ? 'bg-red animate-pulse' : 'bg-red'} text-paper`}>
+              <span className="text-paper/70">TIME</span>
+              <span className="font-display text-base">{mins}:{secs}</span>
+            </div>
           )}
         </div>
-      </div>
+      </header>
 
-      <div className="fixed bottom-6 right-5 z-50 flex flex-col items-center gap-2">
-        <span className="text-[9px] text-gray-400 uppercase tracking-wide font-mono">Undo Tokens</span>
-        <div className="flex gap-1.5">
-          {[2, 1, 0].map(i => (
-            <div
-              key={i}
-              className={`w-2.5 h-2.5 rounded-full transition-all ${
-                i < undoTokens
-                  ? 'bg-yellow-400 shadow-[0_0_6px_rgba(241,196,15,0.6)]'
-                  : 'bg-gray-700'
-              }`}
-            />
-          ))}
-        </div>
+      {/* BOTTOM ACTION BAR */}
+      <footer className="fixed inset-x-0 bottom-0 z-40 flex border-t-4 border-ink bg-paper pb-safe">
         <button
           onClick={onUndo}
           disabled={undoTokens === 0}
-          className="w-14 h-14 rounded-full bg-red-600 text-white text-xl shadow-[0_4px_18px_rgba(192,57,43,0.5)] hover:scale-105 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex-none min-h-[52px] border-r-4 border-ink px-5 font-display uppercase text-sm tracking-wide disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer hover:bg-paper-dim"
         >
-          ↩
+          ↶ Undo{undoTokens > 0 ? ` (${undoTokens})` : ''}
         </button>
-      </div>
+        <div className="flex flex-1 items-center justify-end px-4 font-mono text-[10px] uppercase tracking-widest text-ink/60">
+          {clicks} clicks · keep going
+        </div>
+      </footer>
     </>
   )
 }
