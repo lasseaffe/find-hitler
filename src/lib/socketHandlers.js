@@ -4,6 +4,9 @@ import { createGame, getGame, getPlayer, updatePlayerMove, addPlayerToGame, mark
 import { fetchAndSanitizeWiki, getRandomWikiPage } from './wikipedia.js'
 import { calculateScore } from './scoring.js'
 import { pickBotName, scheduleBot } from './bots.js'
+import { joinQueue, leaveQueue, findMatch } from './rankedQueue.js'
+import { createDuel, getDuel, applyDamage, isDuelOver, advanceRound } from './hpDuel.js'
+import { calculateHpDamage } from './bfsDistance.js'
 
 function normTitle(t) {
   return decodeURIComponent(t).replace(/_/g, ' ').trim().toLowerCase()
@@ -89,6 +92,7 @@ export function setupSocketHandlers(io) {
           roomCode,
           botId,
           difficulty: 'medium',
+          target: room.target,
           getPlayerLinks: (id) => {
             const p = getPlayer(gameId, id)
             return p ? p.allowedMoves : []
@@ -142,6 +146,37 @@ export function setupSocketHandlers(io) {
       removePlayer(roomCode, socket.id)
       const updatedRoom = getRoom(roomCode)
       if (updatedRoom) io.to(roomCode).emit('room:state', roomSnapshot(roomCode))
+    })
+
+    // --- RANKED: JOIN QUEUE ---
+    socket.on('ranked:join', ({ userId, elo, name }) => {
+      joinQueue({ playerId: socket.id, socketId: socket.id, elo: elo || 1000, name: name || 'Anonymous' })
+      socket.data.userId = userId
+      socket.emit('ranked:queued', { message: 'Searching for opponent...' })
+
+      const opponent = findMatch(socket.id)
+      if (opponent) {
+        leaveQueue(socket.id)
+        leaveQueue(opponent.playerId)
+        startRankedDuel(io, socket.id, { elo: elo || 1000, name: name || 'Anonymous', userId }, opponent)
+      }
+    })
+
+    // --- RANKED: LEAVE QUEUE ---
+    socket.on('ranked:leave', () => {
+      leaveQueue(socket.id)
+      socket.emit('ranked:left', {})
+    })
+
+    // --- RANKED: DUEL MOVE ---
+    socket.on('duel:navigate', async ({ duelId, target: moveTarget }) => {
+      const duel = getDuel(duelId)
+      if (!duel || duel.status !== 'active') return
+      const gameId = duel.gameId
+      if (!gameId) return
+      const room = getRoom(duel.roomCode)
+      if (!room) return
+      await processMoveForPlayer({ io, roomCode: duel.roomCode, gameId, room, playerId: socket.id, targetPage: moveTarget })
     })
   })
 }
@@ -206,6 +241,47 @@ async function processMoveForPlayer({ io, roomCode, gameId, room, playerId, targ
         target: game.target,
       })
     }
+
+    // HP Duel round end: loser takes BFS damage
+    if (room.mode === 'ranked' && room.duelId) {
+      const duel = getDuel(room.duelId)
+      if (duel && duel.status === 'active') {
+        const loserId = Array.from(room.players.keys()).find(id => id !== playerId && !room.players.get(id)?.isBot)
+        if (loserId) {
+          const loserPlayer = getPlayer(gameId, loserId)
+          const damage = await calculateHpDamage(loserPlayer?.currentPage || title, game.target)
+          applyDamage(room.duelId, loserId, damage)
+
+          const winner = isDuelOver(room.duelId)
+          if (winner) {
+            duel.status = 'finished'
+            io.to(roomCode).emit('duel:finished', {
+              winnerId: winner,
+              players: Object.fromEntries(
+                Object.entries(duel.players).map(([id, p]) => [id, { name: p.name, hp: p.hp, elo: p.elo }])
+              ),
+            })
+          } else {
+            advanceRound(room.duelId)
+            const newStart = await getRandomWikiPage()
+            const { cleanHtml: newHtml, validLinks: newLinks, title: newTitle } = await fetchAndSanitizeWiki(newStart)
+            // Reset game state for next round
+            for (const [pid] of room.players.entries()) {
+              if (!room.players.get(pid)?.isBot) {
+                addPlayerToGame(gameId, pid, room.players.get(pid).name, newTitle, newHtml, newLinks)
+              }
+            }
+            io.to(roomCode).emit('duel:round-end', {
+              damage,
+              loserId,
+              duelPlayers: duel.players,
+              nextPage: newTitle,
+              nextHtml: newHtml,
+            })
+          }
+        }
+      }
+    }
   } else if (!roomPlayer?.isBot) {
     io.to(playerId).emit('game:page', {
       html: cleanHtml,
@@ -214,4 +290,54 @@ async function processMoveForPlayer({ io, roomCode, gameId, room, playerId, targ
       undoTokens: updated.undoTokens,
     })
   }
+}
+
+async function startRankedDuel(io, p1SocketId, p1Data, p2Entry) {
+  const p2SocketId = p2Entry.socketId
+  const target = 'Adolf Hitler'
+
+  const startTitle = await getRandomWikiPage()
+  const { cleanHtml, validLinks, title } = await fetchAndSanitizeWiki(startTitle)
+
+  const { code } = createRoom({
+    hostId: p1SocketId,
+    hostName: p1Data.name,
+    mode: 'ranked',
+    target,
+    botCount: 0,
+    maxPlayers: 2,
+  })
+  const room = getRoom(code)
+  room.players.set(p2SocketId, { name: p2Entry.name, isBot: false, clicks: 0, currentPage: null, finished: false })
+  setRoomStatus(code, 'racing')
+  room.startTime = Date.now()
+
+  const gameId = createGame({
+    target,
+    mode: 'ranked',
+    playerId: p1SocketId,
+    playerName: p1Data.name,
+    startPage: title,
+    cleanHtml,
+    validLinks,
+  })
+  addPlayerToGame(gameId, p2SocketId, p2Entry.name, title, cleanHtml, validLinks)
+  room.gameId = gameId
+
+  const duelId = createDuel({
+    p1Id: p1SocketId, p1Name: p1Data.name, p1Elo: p1Data.elo,
+    p2Id: p2SocketId, p2Name: p2Entry.name, p2Elo: p2Entry.elo,
+    roomCode: code,
+  })
+  const duel = getDuel(duelId)
+  duel.gameId = gameId
+  room.duelId = duelId
+
+  const io_ = globalThis._io
+  io_.to(p1SocketId).socketsJoin(code)
+  io_.to(p2SocketId).socketsJoin(code)
+
+  const payload = { duelId, gameId, html: cleanHtml, title, target, mode: 'ranked', roomCode: code }
+  io_.to(p1SocketId).emit('ranked:matched', { ...payload, opponent: { name: p2Entry.name, elo: p2Entry.elo } })
+  io_.to(p2SocketId).emit('ranked:matched', { ...payload, opponent: { name: p1Data.name, elo: p1Data.elo } })
 }

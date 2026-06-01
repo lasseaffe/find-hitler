@@ -6,6 +6,7 @@ import GameHUD from '@/components/GameHUD'
 import LiveFeed from '@/components/LiveFeed'
 import MultiWinScreen from '@/components/MultiWinScreen'
 import { useSocket } from '@/hooks/useSocket'
+import { addEntry } from '@/lib/leaderboard'
 
 function MultiGame() {
   const router = useRouter()
@@ -91,16 +92,59 @@ function MultiGame() {
     }
   }, [gameState, isLoading, myFinish])
 
+  const handleViewResults = useCallback(() => {
+    const mapped = finishers.map((f) => ({
+      name: f.name,
+      path: f.path || [],
+      clicks: f.clicks,
+      time: f.seconds ?? null,
+      score: f.score ?? null,
+      isMe: f.playerId === myIdRef.current,
+      isBot: f.isBot || false,
+    }))
+
+    // If no finisher is flagged as 'me' (e.g. you-finished fired before player-finished),
+    // synthesize a fallback from myFinish
+    if (!mapped.some(f => f.isMe) && myFinish) {
+      mapped.unshift({
+        name: myFinish.name || 'You',
+        path: myFinish.path || [],
+        clicks: myFinish.clicks,
+        time: myFinish.seconds ?? null,
+        score: myFinish.score ?? null,
+        isMe: true,
+        isBot: false,
+      })
+    }
+
+    mapped.filter(f => f.isMe).forEach(f => {
+      addEntry({
+        mode: gameState.mode,
+        target: gameState.target,
+        clicks: f.clicks,
+        time: f.time,
+        score: f.score || 0,
+        playerName: f.name,
+      })
+    })
+
+    sessionStorage.setItem('gameResults', JSON.stringify({
+      target: gameState.target,
+      mode: gameState.mode,
+      finishers: mapped,
+    }))
+
+    router.push('/results')
+  }, [finishers, gameState, router])
+
   if (!gameState) {
-    return <div className="flex items-center justify-center min-h-screen font-mono text-gray-400">Loading...</div>
+    return <div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-widest text-ink/60">Loading…</div>
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] flex">
-      <div className="flex-1 pb-24 min-w-0">
-        {isLoading && (
-          <div className="fixed top-0 left-0 right-0 h-[3px] z-[999] bg-gradient-to-r from-red-500 via-yellow-400 to-red-500 animate-pulse" />
-        )}
+    <div className="flex min-h-screen bg-paper">
+      <div className="min-w-0 flex-1">
+        {isLoading && <div className="fixed inset-x-0 top-0 z-50 h-1 bg-red" />}
 
         <GameHUD
           startPage={gameState.startPage}
@@ -111,16 +155,13 @@ function MultiGame() {
           onUndo={handleUndo}
         />
 
-        <div className="max-w-3xl mx-auto pt-20 px-6">
-          <WikiArticle
-            html={html}
-            onNavigate={handleNavigate}
-            disabled={isLoading || !!myFinish}
-          />
-        </div>
+        <main className="mx-auto max-w-3xl px-5 pt-24 pb-24 sm:pt-20 lg:pr-72">
+          <WikiArticle html={html} onNavigate={handleNavigate} disabled={isLoading || !!myFinish} />
+        </main>
       </div>
 
-      <div className="fixed right-0 top-0 h-full z-40">
+      {/* desktop right rail; hidden on mobile (v1 — mobile drawer is a follow-up) */}
+      <div className="fixed right-0 top-0 z-30 hidden h-full lg:block">
         <LiveFeed players={players} myId={myIdRef.current} />
       </div>
 
@@ -130,6 +171,7 @@ function MultiGame() {
           myId={myIdRef.current}
           target={gameState.target}
           onPlayAgain={() => router.push('/')}
+          onViewResults={handleViewResults}
         />
       )}
     </div>
@@ -138,7 +180,7 @@ function MultiGame() {
 
 export default function MultiPlayPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-widest text-ink/60">Loading…</div>}>
       <MultiGame />
     </Suspense>
   )

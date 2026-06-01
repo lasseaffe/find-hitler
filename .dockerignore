@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+.env
+.env.local
+logs
+.superpowers
+.playwright-mcp
+*.md
+!README.md
+Dockerfile
+.dockerignore
+npm-debug.log*

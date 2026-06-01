@@ -1,6 +1,8 @@
 'use client'
 import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import HitlerMark from '@/components/ui/HitlerMark'
+import { RedButton } from '@/components/ui/primitives'
 
 export default function JoinPage({ params }) {
   const { code } = use(params)
@@ -14,25 +16,24 @@ export default function JoinPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white flex flex-col items-center justify-center px-4">
-      <h1 className="text-4xl font-black text-yellow-400 mb-8">
-        Join Room <span className="text-white">{code}</span>
-      </h1>
-      <div className="w-full max-w-xs space-y-4">
-        <input
-          value={playerName}
-          onChange={e => setPlayerName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleJoin()}
-          placeholder="Your nickname..."
-          className="w-full bg-[#1a1a2e] border border-gray-600 rounded-lg px-4 py-3 text-white font-mono focus:outline-none focus:border-yellow-400"
-        />
-        <button
-          onClick={handleJoin}
-          className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl uppercase tracking-widest"
-        >
-          Join →
-        </button>
-      </div>
+    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+      <main className="w-full max-w-xs border-4 border-ink bg-paper">
+        <div className="border-b-4 border-ink px-5 py-5 text-center">
+          <HitlerMark size={44} className="mx-auto" />
+          <h1 className="mt-3 text-2xl">Join Room</h1>
+          <div className="mt-1 font-display text-3xl tracking-[0.15em] text-red">{code}</div>
+        </div>
+        <div className="space-y-4 px-5 py-5">
+          <input
+            value={playerName}
+            onChange={e => setPlayerName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleJoin()}
+            placeholder="enter codename"
+            className="w-full border-[3px] border-ink bg-paper px-3 py-2.5 font-mono text-sm text-ink placeholder:text-ink/40 outline-none focus:bg-paper-dim caret-red"
+          />
+          <RedButton onClick={handleJoin}>Join →</RedButton>
+        </div>
+      </main>
     </div>
   )
 }

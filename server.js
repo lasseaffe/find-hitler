@@ -4,6 +4,7 @@ import { parse } from 'url'
 import next from 'next'
 import { Server } from 'socket.io'
 import { setupSocketHandlers } from './src/lib/socketHandlers.js'
+import { tickSearchRanges } from './src/lib/rankedQueue.js'
 
 const dev = process.env.NODE_ENV !== 'production'
 const app = next({ dev })
@@ -20,8 +21,10 @@ app.prepare().then(() => {
 
   globalThis._io = io
   setupSocketHandlers(io)
+  setInterval(tickSearchRanges, 30_000)
 
-  httpServer.listen(3004, () => {
-    console.log('> Find Hitler running on http://localhost:3004')
+  const port = Number(process.env.PORT) || 3004
+  httpServer.listen(port, '0.0.0.0', () => {
+    console.log(`> Find Hitler running on :${port}`)
   })
 })

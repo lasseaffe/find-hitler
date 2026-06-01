@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSocket } from '@/hooks/useSocket'
+import { RedButton } from '@/components/ui/primitives'
 
 export default function LobbyPage({ params }) {
   const { code } = use(params)
@@ -52,10 +53,10 @@ export default function LobbyPage({ params }) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0d1117] text-red-400 font-mono flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl mb-4">{error}</div>
-          <button onClick={() => router.push('/')} className="text-yellow-400 underline">Back to Home</button>
+      <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+        <div className="border-4 border-red bg-paper px-8 py-6 text-center">
+          <div className="font-display text-2xl uppercase text-red">{error}</div>
+          <button onClick={() => router.push('/')} className="mt-4 font-mono text-xs uppercase tracking-widest underline hover:text-red cursor-pointer">Back to Home</button>
         </div>
       </div>
     )
@@ -63,8 +64,8 @@ export default function LobbyPage({ params }) {
 
   if (!room) {
     return (
-      <div className="min-h-screen bg-[#0d1117] text-yellow-400 font-mono flex items-center justify-center text-xl">
-        Joining lobby...
+      <div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-[0.2em] text-ink/70">
+        Joining lobby…
       </div>
     )
   }
@@ -72,67 +73,54 @@ export default function LobbyPage({ params }) {
   const isHost = room.host === myId
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white px-4 py-12 flex flex-col items-center">
-      <div className="w-full max-w-md">
-        <h1 className="text-4xl font-black text-yellow-400 mb-1">LOBBY</h1>
-        <p className="font-mono text-gray-400 text-sm mb-8">
-          Room code: <span className="text-white font-bold tracking-widest">{code}</span>
-        </p>
-
-        <div className="bg-[#1a1a2e] border border-gray-700 rounded-xl p-4 mb-6">
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-xs font-mono uppercase tracking-widest text-gray-400">Target</span>
-            <span className="text-red-400 font-bold italic">{room.target}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-mono uppercase tracking-widest text-gray-400">Mode</span>
-            <span className="text-yellow-400 font-mono uppercase text-sm">{room.mode}</span>
-          </div>
+    <div className="min-h-screen bg-paper px-4 py-8 flex flex-col items-center">
+      <main className="w-full max-w-md border-4 border-ink bg-paper">
+        <div className="border-b-4 border-ink px-5 py-3">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Multiplayer Lobby</div>
         </div>
 
-        <div className="mb-6">
-          <div className="text-xs font-mono uppercase tracking-widest text-gray-400 mb-3">
-            Players ({room.players.length})
-          </div>
-          <div className="space-y-2">
-            {room.players.map(p => (
-              <div key={p.id} className="flex items-center gap-3 bg-[#1a1a2e] rounded-lg px-4 py-2">
-                <div className={`w-2 h-2 rounded-full ${p.isBot ? 'bg-orange-400' : 'bg-green-400'}`} />
-                <span className="font-mono text-sm flex-1">{p.name}</span>
-                {p.id === room.host && <span className="text-[10px] text-yellow-400 font-mono uppercase">host</span>}
-                {p.isBot && <span className="text-[10px] text-orange-400 font-mono uppercase">bot</span>}
-              </div>
-            ))}
-          </div>
+        {/* share code */}
+        <div className="border-b-4 border-ink px-5 py-5 text-center">
+          <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink/60">Share Code</div>
+          <div className="mt-1 font-display text-5xl tracking-[0.15em]">{code}</div>
+        </div>
+
+        {/* mode / target */}
+        <div className="flex border-b-4 border-ink font-mono text-[10px] uppercase">
+          <div className="flex-1 border-r-4 border-ink px-4 py-2.5"><span className="text-ink/60">Target</span> <span className="text-red font-bold">{room.target}</span></div>
+          <div className="px-4 py-2.5"><span className="text-ink/60">Mode</span> {room.mode}</div>
+        </div>
+
+        {/* players */}
+        <div className="border-b-4 border-ink">
+          {room.players.map((p, i) => (
+            <div key={p.id} className={`flex items-center gap-2 px-4 py-2.5 font-mono text-xs ${i > 0 ? 'border-t-2 border-ink' : ''}`}>
+              <span className="text-ink/40">{String(i + 1).padStart(2, '0')}</span>
+              <span className="flex-1 font-display uppercase text-sm">{p.name}</span>
+              {p.id === room.host && <span className="bg-red px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-paper">host</span>}
+              {p.isBot && <span className="border-2 border-ink px-1.5 py-0.5 text-[8px] uppercase tracking-wide">bot</span>}
+            </div>
+          ))}
         </div>
 
         {joinUrl && (
-          <div className="bg-[#1a1a2e] border border-gray-700 rounded-xl p-4 mb-6">
-            <p className="text-xs font-mono text-gray-400 mb-1">Share link</p>
-            <p className="text-yellow-400 font-mono text-sm break-all">{joinUrl}</p>
+          <div className="border-b-4 border-ink px-5 py-3">
+            <p className="font-mono text-[9px] uppercase tracking-widest text-ink/60">Share link</p>
+            <p className="mt-1 break-all font-mono text-xs text-red">{joinUrl}</p>
           </div>
         )}
 
         {isHost ? (
           <>
-            <button
-              onClick={handleStart}
-              className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black text-lg rounded-xl uppercase tracking-widest transition-colors shadow-[0_0_30px_rgba(192,57,43,0.4)]"
-            >
-              Start Race →
-            </button>
+            <RedButton onClick={handleStart}>Start Race →</RedButton>
             {room.players.filter(p => !p.isBot).length === 1 && (
-              <p className="text-center text-gray-500 font-mono text-xs mt-2">
-                You can start with just bots — or share the link to invite friends
-              </p>
+              <p className="px-5 py-2 text-center font-mono text-[10px] uppercase tracking-wide text-ink/50">Start with bots, or share the link to invite friends</p>
             )}
           </>
         ) : (
-          <div className="text-center text-gray-400 font-mono text-sm">
-            Waiting for host to start...
-          </div>
+          <div className="py-4 text-center font-mono text-xs uppercase tracking-widest text-ink/60">Waiting for host to start…</div>
         )}
-      </div>
+      </main>
     </div>
   )
 }

@@ -32,8 +32,8 @@ export default function LobbyNewPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-yellow-400 font-mono flex items-center justify-center text-xl">
-      Creating lobby...
+    <div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-[0.2em] text-ink/70">
+      Creating lobby…
     </div>
   )
 }
