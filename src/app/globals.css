@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes shimmer {
+  0%   { background-position: 0% }
+  100% { background-position: 200% }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.2s linear infinite;
+}
