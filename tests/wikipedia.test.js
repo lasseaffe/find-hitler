@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fetchAndSanitizeWiki } from '../src/lib/wikipedia.js'
 
 const FIXTURE_HTML = `
-<div id="mw-content-text">
+<div class="mw-parser-output">
   <p>Brazil is a country in <a href="/wiki/South_America">South America</a>.</p>
   <p>It borders <a href="/wiki/Argentina">Argentina</a>.</p>
   <p>See also <a href="/wiki/Special:Search">search</a> and <a href="https://external.com">external</a>.</p>

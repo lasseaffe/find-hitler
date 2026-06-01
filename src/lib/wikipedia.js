@@ -9,7 +9,9 @@ export async function fetchAndSanitizeWiki(pageTitle) {
 
   const html = data.parse.text['*']
   const $ = cheerio.load(html)
-  const body = $('#mw-content-text')
+  // Wikipedia's parse API returns the content as a top-level mw-parser-output div
+  // (not wrapped in #mw-content-text like the full page HTML)
+  const body = $('.mw-parser-output').first()
 
   // Strip Wikipedia UI elements that could be used for navigation or cheating
   body.find('.navbox, .infobox, .reflist, .reference, #mw-navigation, .sistersitebox, .ambox, .hatnote').remove()
