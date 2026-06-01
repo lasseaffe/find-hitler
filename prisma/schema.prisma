@@ -56,16 +56,21 @@ model User {
 }
 
 model Match {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  target    String
-  mode      String
-  clicks    Int
-  seconds   Int
-  score     Int
-  path      String[]
-  won       Boolean
-  eloChange Int      @default(0)
-  playedAt  DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  target       String
+  mode         String
+  clicks       Int
+  seconds      Int
+  score        Int
+  path         String[]
+  won          Boolean
+  eloChange    Int      @default(0)
+  eloBefore    Int      @default(0)
+  eloAfter     Int      @default(0)
+  rank         Int      @default(0)
+  totalPlayers Int      @default(1)
+  opponentIds  String[]
+  playedAt     DateTime @default(now())
 }

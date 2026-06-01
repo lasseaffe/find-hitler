@@ -16,11 +16,44 @@ const loadingScreen = (
   <div className="flex min-h-screen items-center justify-center bg-paper font-mono text-sm uppercase tracking-widest text-ink/60">Loading…</div>
 )
 
+const MODE_COLORS = {
+  classic:  { bg: '#e5241e', text: '#fff' },
+  speedrun: { bg: '#b45309', text: '#fff' },
+  golf:     { bg: '#166534', text: '#fff' },
+  jesus:    { bg: '#1e40af', text: '#fff' },
+  daily:    { bg: '#6b21a8', text: '#fff' },
+  nohub:    { bg: '#374151', text: '#fff' },
+  ranked:   { bg: '#0e0e0e', text: '#e5241e' },
+}
+
+function ModeBadge({ mode }) {
+  const c = MODE_COLORS[mode] || { bg: '#222', text: '#fff' }
+  return (
+    <span style={{ background: c.bg, color: c.text, fontSize: 7, fontFamily: 'ui-monospace,monospace', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '2px 6px', fontWeight: 700, flexShrink: 0 }}>
+      {mode}
+    </span>
+  )
+}
+
+function PathChain({ path }) {
+  if (!path || path.length === 0) return <span style={{ color: '#555', fontFamily: 'ui-monospace,monospace', fontSize: 9 }}>—</span>
+  const nodes = path.length > 5 ? [...path.slice(0, 2), '…', ...path.slice(-2)] : path
+  return (
+    <span style={{ fontFamily: 'ui-monospace,monospace', fontSize: 9, color: '#666' }}>
+      {nodes.map((n, i) => (
+        <span key={i}>{i > 0 && <span style={{ color: '#333', margin: '0 3px' }}>›</span>}{n}</span>
+      ))}
+    </span>
+  )
+}
+
 export default function ProfilePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all') // 'all' | 'ranked' | 'classic' | 'other'
+  const [showCount, setShowCount] = useState(20)
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.push('/login'); return }
@@ -70,31 +103,82 @@ export default function ProfilePage() {
 
         {/* match history */}
         <div className="px-5 py-4">
-          <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Match History</div>
-          {matches.length === 0 ? (
-            <div className="border-[3px] border-ink px-6 py-8 text-center font-mono text-xs text-ink/60">
-              No matches yet. <a href="/" className="text-red underline">Play a race</a> to begin.
-            </div>
-          ) : (
-            <div className="border-[3px] border-ink">
-              {matches.map((m, i) => (
-                <div key={m.id} className={`flex items-center gap-3 px-4 py-2.5 font-mono text-xs ${i > 0 ? 'border-t-2 border-ink' : ''} ${m.won ? '' : 'bg-paper-dim'}`}>
-                  <span className={`font-display ${m.won ? 'text-red' : 'text-ink/50'}`}>{m.won ? 'WON' : 'LOST'}</span>
-                  <div className="min-w-0 flex-1 truncate">
-                    <span className="font-display uppercase">{m.target}</span>
-                    <span className="ml-2 uppercase text-ink/50">{m.mode}</span>
-                  </div>
-                  <span className="flex-none">{m.clicks} clk</span>
-                  <span className="flex-none text-ink/50">{formatSeconds(m.seconds)}</span>
-                  {m.eloChange !== 0 && (
-                    <span className={`flex-none font-display ${m.eloChange > 0 ? 'text-red' : 'text-ink/50'}`}>
-                      {m.eloChange > 0 ? '+' : ''}{m.eloChange}
-                    </span>
-                  )}
-                </div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60">Match History</div>
+            <div className="flex gap-[2px]">
+              {['all','ranked','classic','other'].map(f => (
+                <button key={f} onClick={() => { setFilter(f); setShowCount(20) }}
+                  className={`font-mono text-[8px] uppercase tracking-[0.1em] px-2.5 py-1 border-[2px] border-ink cursor-pointer ${filter === f ? 'bg-ink text-paper' : 'bg-paper hover:bg-paper-dim'}`}>
+                  {f}
+                </button>
               ))}
             </div>
-          )}
+          </div>
+
+          {(() => {
+            const filtered = matches.filter(m => {
+              if (filter === 'all') return true
+              if (filter === 'ranked') return m.mode === 'ranked'
+              if (filter === 'classic') return m.mode === 'classic'
+              return m.mode !== 'ranked' && m.mode !== 'classic'
+            })
+            const visible = filtered.slice(0, showCount)
+
+            if (filtered.length === 0) return (
+              <div className="border-[3px] border-ink px-6 py-8 text-center font-mono text-xs text-ink/60">
+                No matches yet. <a href="/" className="text-red underline">Play a race</a> to begin.
+              </div>
+            )
+
+            return (
+              <>
+                <div className="border-[3px] border-ink divide-y-2 divide-ink">
+                  {visible.map(m => (
+                    <div key={m.id} className="px-4 py-3 font-mono" style={{ background: m.won ? 'transparent' : '#fafaf8' }}>
+                      {/* Row 1: date · mode · target · clicks · rank */}
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span style={{ fontSize: 8, color: '#888' }}>{new Date(m.playedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        <ModeBadge mode={m.mode} />
+                        <span className="font-display uppercase text-[11px]">{m.target}</span>
+                        <span style={{ fontSize: 9, color: '#555' }}>{m.clicks} cl · {formatSeconds(m.seconds)}</span>
+                        {m.totalPlayers > 1 && m.rank > 0 && (
+                          <span style={{ fontSize: 8, color: m.rank === 1 ? '#e5241e' : '#888' }}>#{m.rank} of {m.totalPlayers}</span>
+                        )}
+                        {m.mode === 'ranked' && m.eloChange !== 0 && (
+                          <span style={{ fontSize: 9, fontWeight: 700, color: m.eloChange > 0 ? '#16a34a' : '#e5241e' }}>
+                            {m.eloChange > 0 ? '+' : ''}{m.eloChange} LP
+                          </span>
+                        )}
+                        {m.mode === 'ranked' && m.eloBefore > 0 && (
+                          <span style={{ fontSize: 8, color: '#555' }}>{m.eloBefore} → {m.eloAfter}</span>
+                        )}
+                      </div>
+                      {/* Row 2: path */}
+                      <PathChain path={m.path} />
+                      {/* Row 3: opponents */}
+                      {m.opponents && m.opponents.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {m.opponents.map(o => (
+                            <a key={o.userId} href={`/profile/${o.userId}`}
+                              style={{ fontSize: 8, fontFamily: 'ui-monospace,monospace', color: '#555', border: '1px solid #ccc', padding: '1px 6px', textDecoration: 'none' }}
+                              className="hover:border-ink hover:text-ink transition-colors">
+                              {o.name}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {filtered.length > showCount && (
+                  <button onClick={() => setShowCount(n => n + 20)}
+                    className="mt-2 w-full border-[3px] border-ink py-2 font-mono text-[9px] uppercase tracking-widest hover:bg-paper-dim cursor-pointer">
+                    Load more ({filtered.length - showCount} remaining)
+                  </button>
+                )}
+              </>
+            )
+          })()}
         </div>
 
         <div className="grid grid-cols-2 gap-[3px] border-t-4 border-ink bg-ink">
