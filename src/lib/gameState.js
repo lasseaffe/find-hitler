@@ -67,3 +67,25 @@ export function useUndoToken(gameId, playerId) {
     undoTokens: player.undoTokens,
   }
 }
+
+// Add a new player to an existing game (used for multiplayer joins)
+export function addPlayerToGame(gameId, playerId, playerName, startPage, cleanHtml, validLinks) {
+  const game = games.get(gameId)
+  if (!game) return
+  game.players[playerId] = {
+    name: playerName,
+    currentPage: startPage,
+    _currentHtml: cleanHtml,
+    history: [],
+    clicks: 0,
+    undoTokens: 3,
+    allowedMoves: [...validLinks],
+  }
+}
+
+// Mark a player as finished (for multiplayer win detection)
+export function markPlayerFinished(gameId, playerId) {
+  const game = games.get(gameId)
+  if (!game || !game.players[playerId]) return
+  game.players[playerId].finished = true
+}
