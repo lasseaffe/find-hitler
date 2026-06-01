@@ -12,6 +12,7 @@ function MultiGame() {
   const router = useRouter()
   const [gameState, setGameState] = useState(null)
   const [html, setHtml] = useState('')
+  const [currentPageTitle, setCurrentPageTitle] = useState('')
   const [clicks, setClicks] = useState(0)
   const [undoTokens, setUndoTokens] = useState(3)
   const [isLoading, setIsLoading] = useState(false)
@@ -26,6 +27,7 @@ function MultiGame() {
     },
     'game:page': (data) => {
       setHtml(data.html)
+      setCurrentPageTitle(data.title || '')
       setClicks(data.clicks)
       setUndoTokens(data.undoTokens)
       setIsLoading(false)
@@ -63,6 +65,7 @@ function MultiGame() {
       startPage: init.title,
     })
     setHtml(init.html)
+    setCurrentPageTitle(init.title || '')
     setPlayers(init.snapshot?.players || [])
   }, [router])
 
@@ -156,6 +159,11 @@ function MultiGame() {
         />
 
         <main className="mx-auto max-w-3xl px-5 pt-28 pb-24 lg:pr-72">
+          {currentPageTitle && (
+            <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 9, color: '#888', textTransform: 'uppercase', letterSpacing: '0.12em', paddingBottom: 4, borderBottom: '1px solid #e8e4dc', marginBottom: 8 }}>
+              {currentPageTitle}
+            </div>
+          )}
           <WikiArticle html={html} onNavigate={handleNavigate} disabled={isLoading || !!myFinish} />
         </main>
       </div>

@@ -16,6 +16,7 @@ function PlayGame() {
 
   const [gameState, setGameState] = useState(null)
   const [html, setHtml] = useState('')
+  const [currentPageTitle, setCurrentPageTitle] = useState('')
   const [clicks, setClicks] = useState(0)
   const [undoTokens, setUndoTokens] = useState(3)
   const [isLoading, setIsLoading] = useState(false)
@@ -45,6 +46,7 @@ function PlayGame() {
       timeLimitSeconds: init.timeLimitSeconds || null,
     })
     setHtml(init.html)
+    setCurrentPageTitle(init.title || '')
     setClicks(init.clicks)
     setUndoTokens(init.undoTokens)
     if (init.jesusRound) setJesusRound(init.jesusRound)
@@ -101,6 +103,7 @@ function PlayGame() {
         setWin({ score: data.score, clicks: data.clicks, time: data.time, parGrade: data.parGrade || null, parDelta: data.parDelta ?? null })
       } else {
         setHtml(data.html)
+        setCurrentPageTitle(data.title || '')
         setUndoTokens(data.undoTokens)
       }
     } catch (err) {
@@ -201,6 +204,11 @@ function PlayGame() {
               }}
             >
               ⛔ {bounceMessage}
+            </div>
+          )}
+          {currentPageTitle && (
+            <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 9, color: '#888', textTransform: 'uppercase', letterSpacing: '0.12em', paddingBottom: 4, borderBottom: '1px solid #e8e4dc', marginBottom: 8 }}>
+              {currentPageTitle}
             </div>
           )}
           <WikiArticle html={html} onNavigate={handleNavigate} disabled={isLoading || !!win} />
