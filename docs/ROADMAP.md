@@ -10,7 +10,7 @@
 **What it is:** A web-based WikiRace game where players navigate Wikipedia hyperlinks to reach a target page. The identity is *taboo destination tourism* — the shock of navigating to Hitler, 9/11, serial killers, etc. is the hook.
 
 **Location:** `C:\Users\lasse\Desktop\find-hitler`
-**Port:** 3003
+**Port:** 3004
 **Start:** Double-click `find-hitler.bat` on Desktop
 
 **Tech Stack:**
@@ -102,7 +102,7 @@ app.prepare().then(() => {
   // attach io to globalThis so API routes can emit events
   globalThis._io = io
   setupSocketHandlers(io)
-  httpServer.listen(3003)
+  httpServer.listen(3004)
 })
 ```
 
@@ -165,7 +165,7 @@ npm install socket.io socket.io-client
 ### Phase 2 Handoff Prompt
 
 ```
-You are continuing development of "Find Hitler" — a WikiRace game at C:\Users\lasse\Desktop\find-hitler (port 3003).
+You are continuing development of "Find Hitler" — a WikiRace game at C:\Users\lasse\Desktop\find-hitler (port 3004).
 
 PHASE 1 IS COMPLETE. The following already works:
 - Solo gameplay: home page → random Wikipedia start → navigate links → win screen
@@ -181,7 +181,7 @@ Read the full roadmap at C:\Users\lasse\Desktop\find-hitler\docs\ROADMAP.md — 
 Start by invoking the superpowers:writing-plans skill to create a detailed implementation plan for Phase 2 before writing any code. The plan should go to docs/superpowers/plans/YYYY-MM-DD-find-hitler-phase2.md.
 
 Key constraints:
-- Port stays 3003
+- Port stays 3004
 - Phase 1 API routes must still work (just add Socket.io alongside)
 - All game logic stays server-authoritative
 - Bots use the same validation path as real players
@@ -243,7 +243,7 @@ Key constraints:
 ### Phase 3 Handoff Prompt
 
 ```
-You are continuing development of "Find Hitler" — a WikiRace game at C:\Users\lasse\Desktop\find-hitler (port 3003).
+You are continuing development of "Find Hitler" — a WikiRace game at C:\Users\lasse\Desktop\find-hitler (port 3004).
 
 PHASES 1 AND 2 ARE COMPLETE:
 - Phase 1: Solo core loop (Wikipedia engine, anti-cheat, API routes, game/home pages)
@@ -321,7 +321,7 @@ npm install d3
 ### Phase 4 Handoff Prompt
 
 ```
-You are continuing development of "Find Hitler" — a WikiRace game at C:\Users\lasse\Desktop\find-hitler (port 3003).
+You are continuing development of "Find Hitler" — a WikiRace game at C:\Users\lasse\Desktop\find-hitler (port 3004).
 
 PHASES 1-3 ARE COMPLETE:
 - Phase 1: Solo core loop
@@ -431,7 +431,7 @@ npx prisma init
 ### Phase 5 Handoff Prompt
 
 ```
-You are continuing development of "Find Hitler" — a WikiRace game at C:\Users\lasse\Desktop\find-hitler (port 3003).
+You are continuing development of "Find Hitler" — a WikiRace game at C:\Users\lasse\Desktop\find-hitler (port 3004).
 
 PHASES 1-4 ARE COMPLETE:
 - Phase 1: Solo core loop
