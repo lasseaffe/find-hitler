@@ -1,6 +1,26 @@
 'use client'
+import { useState, useEffect } from 'react'
 
-export default function GameHUD({ startPage, target, mode, clicks, undoTokens, onUndo }) {
+export default function GameHUD({ startPage, target, mode, clicks, undoTokens, onUndo, timeLimitSeconds, jesusRound, onTimeUp }) {
+  const [elapsed, setElapsed] = useState(0)
+
+  useEffect(() => {
+    if (!timeLimitSeconds) return
+    const interval = setInterval(() => {
+      setElapsed(e => {
+        const next = e + 1
+        if (next >= timeLimitSeconds && onTimeUp) onTimeUp()
+        return next
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [timeLimitSeconds, onTimeUp])
+
+  const remaining = timeLimitSeconds ? Math.max(0, timeLimitSeconds - elapsed) : null
+  const mins = remaining !== null ? String(Math.floor(remaining / 60)).padStart(2, '0') : null
+  const secs = remaining !== null ? String(remaining % 60).padStart(2, '0') : null
+  const timerDanger = remaining !== null && remaining <= 30
+
   return (
     <>
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-white/85 backdrop-blur border border-black/10 rounded-full px-5 py-2 shadow text-sm font-black tracking-wide whitespace-nowrap">
@@ -9,17 +29,37 @@ export default function GameHUD({ startPage, target, mode, clicks, undoTokens, o
         <span className="text-red-600 italic">{target}</span>
       </div>
 
-      <div className="fixed top-3 right-3 z-50 w-48">
-        <div className="bg-[#1a1a2e] border-2 border-red-500 rounded-lg p-3 font-mono text-white">
-          <div className="flex justify-between items-center mb-1">
+      <div className="fixed top-3 right-3 z-50 w-52">
+        <div className="bg-[#1a1a2e] border-2 border-red-500 rounded-lg p-3 font-mono text-white space-y-1">
+          <div className="flex justify-between items-center">
             <span className="text-[9px] uppercase tracking-widest text-gray-400">Clicks</span>
             <span className="text-xl font-bold text-yellow-400">{clicks}</span>
           </div>
-          <hr className="border-[#2a2a3e] my-1" />
+          <hr className="border-[#2a2a3e]" />
           <div className="flex justify-between items-center">
             <span className="text-[9px] uppercase tracking-widest text-gray-400">Mode</span>
             <span className="text-[10px] text-yellow-400 uppercase">{mode}</span>
           </div>
+          {jesusRound !== null && jesusRound !== undefined && (
+            <>
+              <hr className="border-[#2a2a3e]" />
+              <div className="flex justify-between items-center">
+                <span className="text-[9px] uppercase tracking-widest text-gray-400">Round</span>
+                <span className="text-[10px] text-purple-400 font-bold">{jesusRound} / 5</span>
+              </div>
+            </>
+          )}
+          {remaining !== null && (
+            <>
+              <hr className="border-[#2a2a3e]" />
+              <div className="flex justify-between items-center">
+                <span className="text-[9px] uppercase tracking-widest text-gray-400">Time Left</span>
+                <span className={`text-sm font-bold ${timerDanger ? 'text-red-400 animate-pulse' : 'text-green-400'}`}>
+                  {mins}:{secs}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
