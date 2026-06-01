@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import WikiArticle from '@/components/WikiArticle'
 import HpDuelHUD from '@/components/HpDuelHUD'
 import EloChange from '@/components/EloChange'
+import DamageOverlay from '@/components/DamageOverlay'
 import { useSocket } from '@/hooks/useSocket'
 
 function RankedGame() {
@@ -19,6 +20,8 @@ function RankedGame() {
   const [round, setRound] = useState(1)
   const [duelFinished, setDuelFinished] = useState(null)
   const [eloChange, setEloChange] = useState(null)
+  const [damageEvent, setDamageEvent] = useState(null)
+  const [myHp, setMyHp] = useState(5000)
   const myIdRef = useRef(null)
 
   const handlers = {
@@ -33,6 +36,11 @@ function RankedGame() {
       setDuelPlayers(Object.fromEntries(
         Object.entries(data.duelPlayers).map(([id, p]) => [id, { name: p.name, hp: p.hp }])
       ))
+      if (data.loserId === myIdRef.current) {
+        const myPlayerData = data.duelPlayers[myIdRef.current]
+        if (myPlayerData) setMyHp(myPlayerData.hp)
+        setDamageEvent({ damage: data.damage, timestamp: Date.now() })
+      }
       setRound(r => r + 1)
       setHtml(data.nextHtml)
       setClicks(0)
@@ -113,6 +121,8 @@ function RankedGame() {
       {eloChange !== null && session?.user && (
         <EloChange delta={eloChange} oldElo={(session.user.elo || 1000) - eloChange} newElo={session.user.elo || 1000} />
       )}
+
+      <DamageOverlay trigger={damageEvent} hp={myHp} maxHp={5000} />
 
       {duelFinished && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 px-4">
