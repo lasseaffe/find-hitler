@@ -87,7 +87,8 @@ function PlayGame() {
         const playerName = playerNameRef.current
         const finisher = {
           name: playerName, path: data.path || [], clicks: data.clicks,
-          time: data.time, score: data.score, isMe: true, isBot: false,
+          time: data.time, score: data.score, nodeTimes: data.nodeTimes || null,
+          isMe: true, isBot: false,
         }
         sessionStorage.setItem('gameResults', JSON.stringify({
           target: gameState.target, mode: gameState.mode, finishers: [finisher],
@@ -95,6 +96,7 @@ function PlayGame() {
         addEntry({
           mode: gameState.mode, target: gameState.target,
           clicks: data.clicks, time: data.time, score: data.score, playerName,
+          path: data.path || [],
         })
         setWin({ score: data.score, clicks: data.clicks, time: data.time, parGrade: data.parGrade || null, parDelta: data.parDelta ?? null })
       } else {
@@ -184,7 +186,7 @@ function PlayGame() {
         onTimeUp={handleTimeUp}
       />
 
-      <div className="flex" style={{ paddingTop: 52, paddingBottom: 52, minHeight: '100vh', background: '#fff' }}>
+      <div className="flex" style={{ paddingTop: 100, paddingBottom: 56, minHeight: '100vh', background: '#fff' }}>
         <WikiSidebar className="hidden sm:block" />
         <main className="flex-1 min-w-0 px-4 py-3" style={{ maxWidth: 780 }}>
           {bounceMessage && (

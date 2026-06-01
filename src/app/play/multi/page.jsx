@@ -155,7 +155,7 @@ function MultiGame() {
           onUndo={handleUndo}
         />
 
-        <main className="mx-auto max-w-3xl px-5 pt-24 pb-24 sm:pt-20 lg:pr-72">
+        <main className="mx-auto max-w-3xl px-5 pt-28 pb-24 lg:pr-72">
           <WikiArticle html={html} onNavigate={handleNavigate} disabled={isLoading || !!myFinish} />
         </main>
       </div>
