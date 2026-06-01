@@ -3,8 +3,10 @@
 FROM node:22-slim AS base
 WORKDIR /app
 
-# Install ALL deps (devDeps needed for `next build`). postinstall runs `prisma generate`.
+# Install ALL deps (devDeps needed for `next build`). The prisma schema must be
+# present BEFORE `npm ci`, because the postinstall hook runs `prisma generate`.
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
 RUN npm ci
 
 # Build
