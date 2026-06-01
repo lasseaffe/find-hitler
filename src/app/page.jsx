@@ -16,6 +16,10 @@ const TARGETS = [
 const MODES = [
   { value: 'classic', label: 'Classic', desc: 'Fewest clicks wins. Random start page.' },
   { value: 'speedrun', label: 'Speedrun', desc: 'Fastest time wins. Curated start page.' },
+  { value: 'golf', label: 'Golf', desc: '5-min cap. Lowest click count wins.' },
+  { value: 'jesus', label: '5 Clicks to Jesus', desc: '5 rounds, par = 5 clicks. Target is always Jesus.' },
+  { value: 'daily', label: 'Daily Challenge', desc: 'Same pages for everyone today. One attempt.' },
+  { value: 'nohub', label: 'No-Hub', desc: 'Hub pages bounce you back and cost an undo token.' },
 ]
 
 export default function HomePage() {
@@ -23,10 +27,13 @@ export default function HomePage() {
   const [playType, setPlayType] = useState('solo')
   const [target, setTarget] = useState('Adolf Hitler')
   const [mode, setMode] = useState('classic')
+  const [hardcore, setHardcore] = useState(false)
   const [playerName, setPlayerName] = useState('')
   const [botCount, setBotCount] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const targetLocked = mode === 'jesus' || mode === 'daily'
 
   const handleStart = async () => {
     if (!playerName.trim()) { setError('Enter your name to continue'); return }
@@ -38,18 +45,18 @@ export default function HomePage() {
         const res = await fetch('/api/game/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target, mode, playerName: playerName.trim() }),
+          body: JSON.stringify({ target, mode, playerName: playerName.trim(), hardcore }),
         })
         const data = await res.json()
         if (!res.ok) { setError(data.error || 'Server error'); setLoading(false); return }
-        sessionStorage.setItem('gameInit', JSON.stringify({ ...data, target, mode }))
+        sessionStorage.setItem('gameInit', JSON.stringify({ ...data, target: data.target || target, mode, hardcore }))
         router.push('/play')
       } catch {
         setError('Could not reach server — is it running?')
         setLoading(false)
       }
     } else {
-      sessionStorage.setItem('lobbyConfig', JSON.stringify({ playerName: playerName.trim(), mode, target, botCount }))
+      sessionStorage.setItem('lobbyConfig', JSON.stringify({ playerName: playerName.trim(), mode, target, botCount, hardcore }))
       router.push('/lobby/new')
     }
   }
@@ -90,7 +97,7 @@ export default function HomePage() {
 
         <div>
           <label className="block text-xs font-mono uppercase tracking-widest text-gray-400 mb-2">Target Page</label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid grid-cols-2 gap-2 ${targetLocked ? 'opacity-40 pointer-events-none' : ''}`}>
             {TARGETS.map(t => (
               <button
                 key={t.label}
@@ -106,6 +113,11 @@ export default function HomePage() {
               </button>
             ))}
           </div>
+          {targetLocked && (
+            <p className="text-xs font-mono text-yellow-400 mt-1">
+              {mode === 'jesus' ? 'Target fixed: Jesus' : 'Target selected by daily seed'}
+            </p>
+          )}
         </div>
 
         <div>
@@ -127,6 +139,20 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+
+        <button
+          onClick={() => setHardcore(h => !h)}
+          className={`w-full px-4 py-3 rounded-lg text-left transition-all border ${
+            hardcore
+              ? 'bg-red-900/40 border-red-500 text-red-400'
+              : 'bg-[#1a1a2e] border-gray-700 text-gray-400 hover:border-gray-500'
+          }`}
+        >
+          <div className="font-bold text-sm flex items-center gap-2">
+            <span>{hardcore ? '☠ HARDCORE ON' : '☠ Hardcore Modifier'}</span>
+          </div>
+          <div className="text-[11px] opacity-60">0 undos · time caps halved · max pain</div>
+        </button>
 
         {playType === 'multi' && (
           <div>
