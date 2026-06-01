@@ -36,11 +36,12 @@ export function updatePlayerMove(gameId, playerId, { nextPage, cleanHtml, validL
   const game = games.get(gameId)
   const player = game.players[playerId]
 
-  // Push current state to history before advancing
+  // Push current state to history before advancing; record timestamp for per-node timing
   player.history.push({
     page: player.currentPage,
     html: player._currentHtml,
     allowedMoves: [...player.allowedMoves],
+    timestamp: Date.now(),
   })
 
   player.currentPage = nextPage

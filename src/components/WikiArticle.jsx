@@ -19,7 +19,8 @@ export default function WikiArticle({ html, onNavigate, disabled }) {
   }, [])
 
   useEffect(() => {
-    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    // The article container itself isn't scrollable — the window is.
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [html])
 
   const handleClick = (e) => {

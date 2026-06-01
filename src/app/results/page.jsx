@@ -1,14 +1,18 @@
 // src/app/results/page.jsx
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ResultsScreen from '@/components/ResultsScreen'
 
 export default function ResultsPage() {
   const router = useRouter()
   const [results, setResults] = useState(null)
+  const initializedRef = useRef(false)
 
   useEffect(() => {
+    if (initializedRef.current) return
+    initializedRef.current = true
+
     const raw = sessionStorage.getItem('gameResults')
     if (!raw) { router.push('/'); return }
     sessionStorage.removeItem('gameResults')

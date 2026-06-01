@@ -20,9 +20,9 @@ function write(entries) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
 }
 
-export function addEntry({ mode, target, clicks, time, score, playerName }) {
+export function addEntry({ mode, target, clicks, time, score, playerName, path }) {
   const entries = read()
-  entries.push({ mode, target, clicks, time, score, playerName, date: today() })
+  entries.push({ mode, target, clicks, time, score, playerName, path: path || null, date: today() })
 
   if (entries.length > MAX_ENTRIES) {
     // Drop the lowest-score entry among existing entries (never the one just added)

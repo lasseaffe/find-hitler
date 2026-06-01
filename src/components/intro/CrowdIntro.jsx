@@ -39,14 +39,16 @@ function MarkFigure() {
 function Figure({ index, phase, isTarget }) {
   const visible = phase !== 'init'
   const turned = phase === 'turn' || phase === 'hidden'
-  const flashing = phase === 'flash' && isTarget
+  const flashing = (phase === 'flash' || phase === 'shuffle') && isTarget
   return (
     <div
       className="relative aspect-[4/5] w-full transition-[opacity,transform] duration-300 ease-out"
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? 'none' : 'translateY(-8px)',
-        transitionDelay: phase === 'flood' ? `${index * 22}ms` : '0ms',
+        transform: visible
+          ? (phase === 'shuffle' ? `scale(0.88) translateY(${index % 2 === 0 ? -4 : 4}px)` : 'none')
+          : 'translateY(-8px)',
+        transitionDelay: phase === 'flood' ? `${index * 22}ms` : phase === 'shuffle' ? `${index * 8}ms` : '0ms',
       }}
     >
       {/* red flash frame on the target */}
@@ -68,7 +70,8 @@ function Figure({ index, phase, isTarget }) {
 }
 
 export default function CrowdIntro({ onDone }) {
-  const [phase, setPhase] = useState('init') // init -> flood -> flash -> turn -> hidden
+  const [phase, setPhase] = useState('init') // init -> flood -> flash -> shuffle -> turn -> hidden
+  const [order, setOrder] = useState(() => Array.from({ length: COUNT }, (_, i) => i))
   const timers = useRef([])
   const onDoneRef = useRef(onDone)
   onDoneRef.current = onDone
@@ -79,7 +82,20 @@ export default function CrowdIntro({ onDone }) {
     const T = (fn, ms) => timers.current.push(setTimeout(fn, ms))
     T(() => { setPhase('flood'); vocalize() }, 30)
     T(() => setPhase('flash'), 750)
-    T(() => { setPhase('turn'); shuffle() }, 1750)
+    // Shuffle: randomize the grid order so the mark's position jumps unpredictably
+    T(() => {
+      setPhase('shuffle')
+      setOrder(o => {
+        const shuffled = [...o]
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        }
+        return shuffled
+      })
+      shuffle()
+    }, 1350)
+    T(() => { setPhase('turn') }, 1750)
     T(() => { setPhase('hidden'); startSfx() }, 2250)
     T(() => onDoneRef.current?.(), 2650)
     return () => { timers.current.forEach(clearTimeout); timers.current = [] }
@@ -92,8 +108,8 @@ export default function CrowdIntro({ onDone }) {
           className="grid gap-2 sm:gap-3"
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(40px, 1fr))', perspective: '900px' }}
         >
-          {Array.from({ length: COUNT }, (_, i) => (
-            <Figure key={i} index={i} phase={phase} isTarget={i === TARGET_INDEX} />
+          {order.map((figureId, gridPos) => (
+            <Figure key={figureId} index={gridPos} phase={phase} isTarget={figureId === TARGET_INDEX} />
           ))}
         </div>
       </div>

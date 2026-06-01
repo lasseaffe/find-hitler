@@ -74,12 +74,19 @@ export async function POST(request) {
         score = calculateScore({ mode: game.mode, clicks: updatedPlayer.clicks, seconds })
       }
 
+      // Per-node arrival times: seconds since game start for each page visited
+      const nodeTimes = updatedPlayer.history.map(h =>
+        h.timestamp ? Math.floor((h.timestamp - game.startTime) / 1000) : null
+      )
+      nodeTimes.push(seconds) // final page (target) arrived at `seconds`
+
       return NextResponse.json({
         status: 'WIN',
         score,
         clicks: updatedPlayer.clicks,
         time: seconds,
         path: [...updatedPlayer.history.map(h => h.page), title],
+        nodeTimes,
         ...extra,
       })
     }
