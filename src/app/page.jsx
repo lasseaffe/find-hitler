@@ -63,7 +63,13 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen bg-[#0d1117] text-white flex flex-col items-center justify-center px-4 py-12">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-4">
+        <a
+          href="/ranked"
+          className="text-red-400/70 hover:text-red-400 font-mono text-xs uppercase tracking-widest transition-colors"
+        >
+          ⚔ Ranked
+        </a>
         <a
           href="/leaderboard"
           className="text-yellow-400/70 hover:text-yellow-400 font-mono text-xs uppercase tracking-widest transition-colors"
