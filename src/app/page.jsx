@@ -19,12 +19,12 @@ const TARGETS = [
 ]
 
 const MODES = [
-  { value: 'classic', label: 'Classic', desc: 'FEWEST CLICKS · RANDOM START' },
-  { value: 'speedrun', label: 'Speedrun', desc: 'FASTEST TIME · CURATED START' },
-  { value: 'golf', label: 'Golf', desc: '5-MIN CAP · LOWEST CLICKS' },
-  { value: 'jesus', label: '5 Clicks to Jesus', desc: 'PAR · 5 ROUNDS · TARGET = JESUS' },
-  { value: 'daily', label: 'Daily Challenge', desc: 'ONE ATTEMPT · SAME FOR ALL' },
-  { value: 'nohub', label: 'No-Hub', desc: 'HUBS BOUNCE YOU · COST AN UNDO' },
+  { value: 'classic',  label: 'Classic',          desc: 'FEWEST CLICKS · RANDOM START', shortDesc: 'RANDOM START' },
+  { value: 'speedrun', label: 'Speedrun',          desc: 'FASTEST TIME · CURATED START', shortDesc: 'FASTEST TIME' },
+  { value: 'golf',     label: 'Golf',              desc: '5-MIN CAP · LOWEST CLICKS',    shortDesc: '5-MIN CAP' },
+  { value: 'jesus',    label: '5-Clicks',          desc: 'PAR · 5 ROUNDS · TARGET = JESUS', shortDesc: 'TO JESUS' },
+  { value: 'daily',    label: 'Daily',             desc: 'ONE ATTEMPT · SAME FOR ALL',   shortDesc: 'ONE SHOT' },
+  { value: 'nohub',    label: 'No-Hub',            desc: 'HUBS BOUNCE YOU · COST AN UNDO', shortDesc: 'HUB PENALTY' },
 ]
 
 export default function HomePage() {
@@ -59,7 +59,7 @@ export default function HomePage() {
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Server error')
-        return { ...data, target: data.target || target, mode, hardcore }
+        return { ...data, target: data.target || target, mode, hardcore, playerName: playerName.trim() }
       })()
       setShowIntro(true)
     } else {
@@ -151,13 +151,33 @@ export default function HomePage() {
           {/* GAME MODE */}
           <div className="px-5 py-4 border-b-4 border-ink">
             <MonoLabel className="block mb-2.5">Game Mode</MonoLabel>
-            <div className="flex flex-col gap-[3px] bg-ink border-[3px] border-ink">
-              {MODES.map(m => {
+
+            {/* Hero: Classic */}
+            <button
+              onClick={() => setMode('classic')}
+              className={`w-full flex items-center gap-4 px-4 py-5 mb-[3px] border-[3px] cursor-pointer transition-colors ${mode === 'classic' ? 'bg-ink text-paper border-ink' : 'bg-paper text-ink border-ink hover:bg-paper-dim'}`}
+            >
+              <HitlerMark size={52} fill={mode === 'classic' ? 'var(--color-paper)' : 'var(--color-ink)'} className="flex-none" />
+              <div className="flex-1 text-left">
+                <div className="font-display uppercase text-[22px] leading-none">Classic · Find Hitler</div>
+                <div className={`mt-1.5 font-mono text-[11px] ${mode === 'classic' ? 'text-paper/70' : 'text-ink/60'}`}>
+                  Navigate Wikipedia from a random page to Adolf Hitler. Fewest clicks wins.
+                </div>
+              </div>
+              {mode === 'classic' && (
+                <span className="flex-none font-mono text-[8px] uppercase tracking-[0.12em] text-red bg-paper px-2 py-1">★ Main mode</span>
+              )}
+            </button>
+
+            {/* Variants row */}
+            <MonoLabel className="block mt-3 mb-1.5">Variants</MonoLabel>
+            <div className="grid grid-cols-5 gap-[3px] bg-ink border-[3px] border-ink">
+              {MODES.filter(m => m.value !== 'classic').map(m => {
                 const sel = mode === m.value
                 return (
-                  <SelectCell key={m.value} selected={sel} onClick={() => setMode(m.value)} className="flex items-center justify-between gap-3">
-                    <span className="font-display uppercase text-sm">{m.label}</span>
-                    <MonoLabel className={`text-[9px] ${sel ? 'text-paper/70' : ''}`}>{m.desc}</MonoLabel>
+                  <SelectCell key={m.value} selected={sel} onClick={() => setMode(m.value)} className="flex flex-col items-center justify-center text-center py-3 px-1">
+                    <span className="font-display uppercase text-[9px] leading-tight">{m.label}</span>
+                    <MonoLabel className={`mt-1 block text-[7px] ${sel ? 'text-paper/70' : ''}`}>{m.shortDesc}</MonoLabel>
                   </SelectCell>
                 )
               })}
