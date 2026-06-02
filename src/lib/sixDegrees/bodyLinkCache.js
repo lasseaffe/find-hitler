@@ -8,11 +8,15 @@ const WIKI_API = 'https://en.wikipedia.org/w/api.php'
 const UA = 'find-hitler-sixdegrees/1.0 (https://six-clicks.onrender.com; research)'
 
 async function defaultFetchHtml(title) {
-  const url = `${WIKI_API}?action=parse&page=${encodeURIComponent(title)}&prop=text&format=json`
-  const res = await fetch(url, { headers: { 'User-Agent': UA } })
-  const data = await res.json()
-  if (data.error || !data.parse?.text?.['*']) return null
-  return data.parse.text['*']
+  try {
+    const url = `${WIKI_API}?action=parse&page=${encodeURIComponent(title)}&prop=text&format=json`
+    const res = await fetch(url, { headers: { 'User-Agent': UA } })
+    const data = await res.json()
+    if (data.error || !data.parse?.text?.['*']) return null
+    return data.parse.text['*']
+  } catch {
+    return null
+  }
 }
 
 // Disk cache: append-only NDJSON, loaded into a Map on construction.

@@ -1,9 +1,11 @@
 // tests/sixDegrees.bodyLinkCache.test.js
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { getBodyLinks, createDiskCache } from '../src/lib/sixDegrees/bodyLinkCache.js'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+
+afterEach(() => vi.unstubAllGlobals())
 
 const HTML = `<div class="mw-parser-output">
   <p><a href="/wiki/South_America">SA</a> and <a href="/wiki/Argentina">Arg</a></p>
@@ -34,6 +36,12 @@ describe('getBodyLinks', () => {
   it('returns [] when the page cannot be fetched', async () => {
     const fetchHtml = vi.fn().mockResolvedValue(null)
     const links = await getBodyLinks('Nope', { fetchHtml, cache: memCache() })
+    expect(links).toEqual([])
+  })
+
+  it('returns [] when the default network fetch throws (resilient crawl)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
+    const links = await getBodyLinks('Brazil', { cache: memCache() })
     expect(links).toEqual([])
   })
 })
