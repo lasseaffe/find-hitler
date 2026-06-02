@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { auth } from '@/auth'
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url)
@@ -14,7 +14,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     try {
-      const article = await db.factCheckArticle.findUnique({ where: { id } })
+      const article = await prisma.factCheckArticle.findUnique({ where: { id } })
       if (!article) return NextResponse.json({ error: 'Not found' }, { status: 404 })
       return NextResponse.json({ mistakes: article.mistakes })
     } catch (err) {
@@ -28,13 +28,13 @@ export async function GET(request) {
   if (category) where.category = category
 
   try {
-    const count = await db.factCheckArticle.count({ where })
+    const count = await prisma.factCheckArticle.count({ where })
     if (count === 0) {
       return NextResponse.json({ error: 'No approved articles' }, { status: 404 })
     }
 
     const skip = Math.floor(Math.random() * count)
-    const article = await db.factCheckArticle.findFirst({ where, skip })
+    const article = await prisma.factCheckArticle.findFirst({ where, skip })
     if (!article) return NextResponse.json({ error: 'No approved articles' }, { status: 404 })
 
     const safeSpans = article.spans.map(({ text }) => ({ text }))

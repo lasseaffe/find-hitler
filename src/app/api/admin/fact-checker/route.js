@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { auth } from '@/auth'
 
 async function requireAdmin() {
   const session = await auth()
@@ -22,7 +22,7 @@ export async function GET(request) {
   const status = searchParams.get('status') ?? 'pending'
 
   try {
-    const articles = await db.factCheckArticle.findMany({
+    const articles = await prisma.factCheckArticle.findMany({
       where: { status },
       orderBy: { createdAt: 'desc' },
     })
@@ -47,7 +47,7 @@ export async function PATCH(request) {
     : { status: 'rejected' }
 
   try {
-    const updated = await db.factCheckArticle.update({ where: { id }, data })
+    const updated = await prisma.factCheckArticle.update({ where: { id }, data })
     return NextResponse.json({ ok: true, article: updated })
   } catch (err) {
     console.error('[admin/fact-checker PATCH]', err)

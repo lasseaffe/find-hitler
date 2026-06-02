@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { prisma } from '@/lib/db'
 import { scoreAccusation } from '@/lib/factChecker'
 
 export async function POST(request) {
@@ -10,7 +10,7 @@ export async function POST(request) {
   }
 
   try {
-    const article = await db.factCheckArticle.findUnique({ where: { id: articleId } })
+    const article = await prisma.factCheckArticle.findUnique({ where: { id: articleId } })
     if (!article || article.status !== 'approved') {
       return NextResponse.json({ error: 'Article not found' }, { status: 404 })
     }

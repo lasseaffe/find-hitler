@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { auth } from '@/auth'
 
 export async function POST(request) {
   const { articleId, score, correct, wrong, seconds } = await request.json()
@@ -13,7 +13,7 @@ export async function POST(request) {
 
   if (session?.user?.id) {
     try {
-      await db.match.create({
+      await prisma.match.create({
         data: {
           userId: session.user.id,
           target: articleId,
