@@ -9,7 +9,9 @@
     "start": "NODE_ENV=production node server.js",
     "postinstall": "prisma generate",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "six:baseline": "node scripts/six-degrees/run-baseline.mjs",
+    "six:report": "node scripts/six-degrees/report.mjs"
   },
   "engines": {
     "node": ">=20"
