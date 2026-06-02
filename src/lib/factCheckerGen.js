@@ -72,3 +72,17 @@ export function wrapAndValidate(html, llm) {
 
   return { tampered: $.html(), mistakes, decoys }
 }
+
+// Prepare the article HTML for the browser. The browser must never learn which regions
+// are lies. easy/medium: keep data-fc-id (mistakes & decoys indistinguishable), drop the
+// truth attribute. hard/hardcore: unwrap entirely so there is no candidate-set tell.
+export function stripTruthForClient(html, difficulty) {
+  const hard = difficulty === 'hard' || difficulty === 'hardcore'
+  const $ = cheerio.load(html, null, false)
+  $('[data-fc-id]').each((_, el) => {
+    const $el = $(el)
+    if (hard) $el.replaceWith($el.text())
+    else $el.removeAttr('data-fc-mistake')
+  })
+  return $.html()
+}

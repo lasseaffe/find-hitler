@@ -98,3 +98,26 @@ describe('wrapAndValidate', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 })
+
+import { stripTruthForClient } from '../src/lib/factCheckerGen.js'
+
+const STORED = '<p>Born in <span data-fc-id="a1" data-fc-mistake="true">1879</span> in ' +
+               '<span data-fc-id="d1" data-fc-mistake="false">Braunau</span>.</p>'
+
+describe('stripTruthForClient', () => {
+  it('easy/medium: keeps data-fc-id, removes data-fc-mistake (no answer leak)', () => {
+    const out = stripTruthForClient(STORED, 'medium')
+    expect(out).toContain('data-fc-id="a1"')
+    expect(out).toContain('data-fc-id="d1"')
+    expect(out).not.toContain('data-fc-mistake')
+    expect(out).toContain('1879')
+    expect(out).toContain('Braunau')
+  })
+  it('hard/hardcore: removes ALL fc wrappers, keeps the visible text (no candidate-set tell)', () => {
+    const out = stripTruthForClient(STORED, 'hard')
+    expect(out).not.toContain('data-fc-id')
+    expect(out).not.toContain('data-fc-mistake')
+    expect(out).toContain('1879')
+    expect(out).toContain('Braunau')
+  })
+})
