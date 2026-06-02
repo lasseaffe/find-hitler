@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio'
+import { STRIP_SELECTOR, collectWikiLinks } from './sixDegrees/extractBodyLinks.js'
 
 export async function fetchAndSanitizeWiki(pageTitle) {
   const url = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=text&format=json&origin=*`
@@ -9,32 +10,21 @@ export async function fetchAndSanitizeWiki(pageTitle) {
 
   const html = data.parse.text['*']
   const $ = cheerio.load(html)
-  // Wikipedia's parse API returns the content as a top-level mw-parser-output div
-  // (not wrapped in #mw-content-text like the full page HTML)
   const body = $('.mw-parser-output').first()
 
-  // Strip navigation/cheat elements. Keep: hatnotes (authentic), infobox (authentic), reflist (authentic but dimmed via CSS).
-  body.find('.navbox, .navbox-inner, .navbox-subgroup, #mw-navigation, .sistersitebox, .vertical-navbox').remove()
-  // Remove [edit] section links
-  body.find('.mw-editsection').remove()
-  // Remove navbox "v t e" abbreviation remnants
-  body.find('.navbar').remove()
-  // Remove reference superscripts in body text (clutter without footnote targets)
-  body.find('sup.reference, sup.noprint').remove()
-  // Remove coordinates, geo spans, maintenance tags
-  body.find('.geo-nondefault, .geo-multi-punct, .noprint, .mw-empty-elt').remove()
+  // Strip the same elements the measurement extractor strips (single source of truth).
+  body.find(STRIP_SELECTOR).remove()
 
-  const validLinks = new Set()
+  // validLinks via the shared collector (guarantees parity with extractBodyLinks).
+  const validLinks = collectWikiLinks($, body)
 
+  // Rewrite anchors for the playable HTML: internal -> data-wiki-target, others -> text.
   body.find('a').each((_, el) => {
     const href = $(el).attr('href') || ''
-
     if (href.startsWith('/wiki/') && !href.includes(':')) {
       const title = decodeURIComponent(href.replace('/wiki/', ''))
-      validLinks.add(title)
       $(el).attr('data-wiki-target', title).attr('href', '#')
     } else {
-      // Strip non-game links but preserve their visible text
       $(el).replaceWith($(el).text())
     }
   })
