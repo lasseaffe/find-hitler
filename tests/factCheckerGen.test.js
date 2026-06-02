@@ -121,3 +121,31 @@ describe('stripTruthForClient', () => {
     expect(out).toContain('Braunau')
   })
 })
+
+import { buildTamperPrompt, parseTamperJson } from '../src/lib/llm.js'
+
+describe('buildTamperPrompt', () => {
+  it('states the required mistake + decoy counts and the unambiguous-falsehood rule', () => {
+    const p = buildTamperPrompt('Some article text.', 5, 8)
+    expect(p).toContain('5')
+    expect(p).toContain('8')
+    expect(p.toLowerCase()).toContain('exact')
+    expect(p.toLowerCase()).toContain('unambiguous')
+    expect(p).toContain('Some article text.')
+  })
+})
+
+describe('parseTamperJson', () => {
+  it('parses a fenced JSON block', () => {
+    const out = parseTamperJson('```json\n{"mistakes":[{"find":"1889","replacement":"1879","explanation":"e"}],"decoys":[{"find":"Braunau"}]}\n```')
+    expect(out.mistakes[0].find).toBe('1889')
+    expect(out.decoys[0].find).toBe('Braunau')
+  })
+  it('parses raw JSON', () => {
+    const out = parseTamperJson('{"mistakes":[],"decoys":[]}')
+    expect(out.mistakes).toEqual([])
+  })
+  it('throws on non-JSON', () => {
+    expect(() => parseTamperJson('I cannot help with that.')).toThrow()
+  })
+})
