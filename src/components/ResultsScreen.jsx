@@ -249,6 +249,7 @@ export default function ResultsScreen({ results }) {
   const [replayKey, setReplayKey] = useState(0)
   const [edgeOverlap, setEdgeOverlap] = useState({})
   const [personalBest, setPersonalBest] = useState(null)
+  const [challengeLink, setChallengeLink] = useState(null)
 
   const me = results.finishers.find(f => f.isMe) || results.finishers[0]
 
@@ -306,6 +307,29 @@ export default function ResultsScreen({ results }) {
       console.error('Share failed:', err)
       setShareState('error'); setTimeout(() => setShareState('idle'), 3000)
     }
+  }
+
+  const handleChallenge = async () => {
+    if (!me) return
+    try {
+      const res = await fetch('/api/challenge/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target: results.target,
+          mode: results.mode,
+          startPage: me.path?.[0] ?? '',
+          creatorScore: me.score ?? 0,
+          creatorPath: me.path ?? [],
+          creatorClicks: me.clicks ?? 0,
+          creatorSeconds: me.time ?? 0,
+        }),
+      })
+      const { token } = await res.json()
+      const url = `${window.location.origin}/challenge/${token}`
+      await navigator.clipboard.writeText(url).catch(() => {})
+      setChallengeLink(url)
+    } catch { /* non-fatal */ }
   }
 
   const shareLabel = { idle: 'Share Result', building: 'Generating…', done: 'Image Saved ✓', error: 'Failed' }[shareState]
@@ -424,6 +448,19 @@ export default function ResultsScreen({ results }) {
           >
             {shareLabel}
           </button>
+        </div>
+
+        {/* ── Challenge ── */}
+        <div className="flex flex-col items-center gap-1 border-t-4 border-ink px-4 py-4">
+          <button
+            onClick={handleChallenge}
+            className="border-[3px] border-[#2563eb] text-[#2563eb] px-4 py-2 font-mono text-xs uppercase tracking-wide hover:bg-[#2563eb] hover:text-paper"
+          >
+            Challenge a Friend →
+          </button>
+          {challengeLink && (
+            <p className="font-mono text-[9px] text-ink/60 mt-1">Link copied! {challengeLink}</p>
+          )}
         </div>
 
         <RedButton onClick={() => router.push('/')}>Play Again →</RedButton>
