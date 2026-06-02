@@ -86,9 +86,12 @@ model FactCheckArticle {
   title       String
   subject     String
   category    String
+  difficulty  String    @default("medium")
   tampered    String    @db.Text
   mistakes    Json
-  spans       Json
+  decoys      Json      @default("[]")
+  sourceTitle String?
+  sourceUrl   String?
   status      String    @default("pending")
   createdAt   DateTime  @default(now())
   approvedAt  DateTime?
