@@ -74,3 +74,16 @@ model Match {
   opponentIds  String[]
   playedAt     DateTime @default(now())
 }
+
+model FactCheckArticle {
+  id          String    @id @default(cuid())
+  title       String
+  subject     String
+  category    String
+  tampered    String    @db.Text
+  mistakes    Json
+  spans       Json
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  approvedAt  DateTime?
+}
