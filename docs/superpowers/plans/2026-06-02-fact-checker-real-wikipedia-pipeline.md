@@ -134,7 +134,7 @@ describe('matchesSpan (free-select overlap, server-side guard)', () => {
     expect(matchesSpan('1879', '20 April 1879')).toBe(true) // span fully contains selection
   })
   it('matches when selection contains the false text plus a little context', () => {
-    expect(matchesSpan('20 April 1879', '1879')).toBe(true) // 12 chars <= 4*3
+    expect(matchesSpan('20 April 1879', '1879')).toBe(true) // 13 chars <= 4*4
   })
   it('rejects over-selection (drag a whole sentence to win)', () => {
     expect(matchesSpan('he was born on 20 April 1879 in a small town', '1879')).toBe(false)
@@ -225,7 +225,7 @@ export function normalizeSelection(text) {
 // Free-select matching with a server-side over-select guard.
 // A selection matches a mistake's rendered false text (`span`) when they are equal,
 // the selection is contained in the span, or the selection contains the span plus at
-// most a little context (length <= span length * 3). The guard stops "select the whole
+// most a little context (length <= span length * 4). The guard stops "select the whole
 // paragraph" from trivially winning hard mode.
 export function matchesSpan(selection, span) {
   const a = normalizeSelection(selection)
@@ -233,7 +233,7 @@ export function matchesSpan(selection, span) {
   if (!a || !b) return false
   if (a === b) return true
   if (b.includes(a)) return true
-  if (a.includes(b) && a.length <= b.length * 3) return true
+  if (a.includes(b) && a.length <= b.length * 4) return true
   return false
 }
 
