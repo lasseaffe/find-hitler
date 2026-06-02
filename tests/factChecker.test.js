@@ -40,6 +40,7 @@ describe('scoreAccusation', () => {
     expect(result.correct).toBe(true)
     expect(result.delta).toBe(SCORE_CONFIG.easy.correct)
     expect(result.explanation).toBe('He held the rank of lance corporal.')
+    expect(result.answer).toBe('lance corporal')
   })
 
   it('returns correct=false and negative delta for wrong span', () => {
@@ -61,6 +62,23 @@ describe('scoreAccusation', () => {
 
   it('returns correct=false with wrong-penalty delta for no match', () => {
     const result = scoreAccusation('nonexistent', mistakes, 'medium')
+    expect(result.correct).toBe(false)
+    expect(result.delta).toBe(SCORE_CONFIG.medium.wrong)
+  })
+
+  it('uses exact delta values from SCORE_CONFIG', () => {
+    const hard = scoreAccusation('corporal', mistakes, 'hard')
+    expect(hard.delta).toBe(SCORE_CONFIG.hard.correct)
+  })
+
+  it('falls back to medium config for unknown difficulty', () => {
+    const result = scoreAccusation('corporal', mistakes, 'legendary')
+    expect(result.correct).toBe(true)
+    expect(result.delta).toBe(SCORE_CONFIG.medium.correct)
+  })
+
+  it('handles empty string input gracefully', () => {
+    const result = scoreAccusation('', mistakes, 'medium')
     expect(result.correct).toBe(false)
     expect(result.delta).toBe(SCORE_CONFIG.medium.wrong)
   })

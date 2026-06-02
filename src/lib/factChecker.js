@@ -17,7 +17,7 @@ export function scoreAccusation(rawSelection, mistakes, difficulty) {
   const config = SCORE_CONFIG[difficulty] ?? SCORE_CONFIG.medium
 
   if (match) {
-    return { correct: true, delta: config.correct, explanation: match.explanation, correct_value: match.correct }
+    return { correct: true, delta: config.correct, explanation: match.explanation, answer: match.correct }
   }
-  return { correct: false, delta: config.wrong, explanation: null, correct_value: null }
+  return { correct: false, delta: config.wrong, explanation: null, answer: null }
 }
