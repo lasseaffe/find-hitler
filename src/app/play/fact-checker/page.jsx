@@ -53,6 +53,7 @@ export default function FactCheckerPage() {
       }),
     })
     const data = await res.json()
+    if (data.duplicate) return // already found this mistake (e.g., overlapping hard-mode selection)
 
     const newAcc = { label, fcId: data.foundId ?? payload.fcId, correct: data.correct, delta: data.delta }
     setAccusations(prev => [...prev, newAcc])

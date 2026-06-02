@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { scoreAccusation } from '@/lib/factChecker'
+import { scoreAccusation, reconcileFound } from '@/lib/factChecker'
 
 export async function POST(request) {
   const { articleId, fcId, selection, foundSoFar = [] } = await request.json()
@@ -18,18 +18,20 @@ export async function POST(request) {
     const difficulty = article.difficulty ?? 'medium'
     const result = scoreAccusation({ fcId, selection }, article.mistakes, difficulty)
 
-    // foundSoFar is the list of previously-found mistake fcIds (server-authoritative ids).
-    const foundIds = new Set(Array.isArray(foundSoFar) ? foundSoFar : [])
-    if (result.correct && result.foundId) foundIds.add(result.foundId)
-    const allFound = foundIds.size >= article.mistakes.length
+    const { allFound, duplicate } = reconcileFound(
+      foundSoFar, article.mistakes, result.correct ? result.foundId : null
+    )
+    // A duplicate find (same mistake re-selected) scores nothing.
+    const delta = duplicate ? 0 : result.delta
 
     return NextResponse.json({
       correct: result.correct,
-      delta: result.delta,
-      explanation: result.explanation,
-      answer: result.answer,
+      delta,
+      explanation: duplicate ? null : result.explanation,
+      answer: duplicate ? null : result.answer,
       foundId: result.foundId,
       allFound,
+      duplicate,
     })
   } catch (err) {
     console.error('[fact-checker/accuse]', err)

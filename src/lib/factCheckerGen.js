@@ -50,7 +50,7 @@ function wrapFirstOccurrence($, find, isMistake, replacement) {
     const after = node.data.slice(idx + find.length)
     const visible = escapeHtml(replacement ?? find)
     const span = `<span data-fc-id="${fcId}" data-fc-mistake="${isMistake ? 'true' : 'false'}">${visible}</span>`
-    $(node).replaceWith(before + span + after)
+    $(node).replaceWith(escapeHtml(before) + span + escapeHtml(after))
     wrapped = true
   })
   return wrapped ? fcId : null

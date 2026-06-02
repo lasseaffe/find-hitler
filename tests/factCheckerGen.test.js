@@ -97,6 +97,16 @@ describe('wrapAndValidate', () => {
     const ids = [...mistakes, ...decoys].map(x => x.fcId)
     expect(new Set(ids).size).toBe(ids.length)
   })
+
+  it('preserves surrounding text with HTML-special chars without corrupting markup', () => {
+    const { tampered } = wrapAndValidate('<p>Born 1889 where x < y and a & b.</p>', {
+      mistakes: [{ find: '1889', replacement: '1879', explanation: 'e' }],
+      decoys: [],
+    })
+    expect(tampered).toContain('1879')
+    expect(tampered).toContain('&lt;')   // the literal < got escaped, not parsed as a tag
+    expect(tampered).toContain('&amp;')  // the literal & got escaped
+  })
 })
 
 import { stripTruthForClient } from '../src/lib/factCheckerGen.js'

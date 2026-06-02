@@ -44,3 +44,18 @@ export function scoreAccusation(payload, mistakes, difficulty) {
   }
   return { correct: false, delta: config.wrong, explanation: null, answer: null, foundId: null }
 }
+
+// Server-authoritative found-tracking. Filters client-supplied `foundSoFar` to ids that
+// actually belong to this article's mistakes (anti-cheat: fabricated ids are ignored),
+// folds in a newly-found id, and reports completion + whether this was a duplicate find
+// (e.g., two overlapping hard-mode selections of the same lie).
+export function reconcileFound(foundSoFar, mistakes, newFoundId) {
+  const realIds = new Set((Array.isArray(mistakes) ? mistakes : []).map(m => m.fcId))
+  const found = new Set((Array.isArray(foundSoFar) ? foundSoFar : []).filter(id => realIds.has(id)))
+  let duplicate = false
+  if (newFoundId && realIds.has(newFoundId)) {
+    if (found.has(newFoundId)) duplicate = true
+    else found.add(newFoundId)
+  }
+  return { found: [...found], allFound: found.size >= realIds.size, duplicate }
+}

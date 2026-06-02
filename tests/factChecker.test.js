@@ -5,6 +5,7 @@ import {
   scoreAccusation,
   SCORE_CONFIG,
 } from '../src/lib/factChecker.js'
+import { reconcileFound } from '../src/lib/factChecker.js'
 
 describe('normalizeSelection', () => {
   it('trims, lowercases, strips leading article', () => {
@@ -85,5 +86,40 @@ describe('SCORE_CONFIG', () => {
   it('falls back to medium for unknown difficulty', () => {
     const r = scoreAccusation({ fcId: 'a1' }, [{ fcId: 'a1', span: 'x', correct: 'y', explanation: 'z' }], 'legendary')
     expect(r.delta).toBe(SCORE_CONFIG.medium.correct)
+  })
+})
+
+describe('reconcileFound (anti-cheat + dedupe)', () => {
+  const mistakes = [
+    { fcId: 'a1', span: '1879', correct: '1889', explanation: '' },
+    { fcId: 'b2', span: 'Munich', correct: 'Berlin', explanation: '' },
+    { fcId: 'c3', span: 'sergeant', correct: 'corporal', explanation: '' },
+  ]
+
+  it('ignores fabricated foundSoFar ids (anti-cheat)', () => {
+    const r = reconcileFound(['fake1', 'fake2', 'fake3'], mistakes, null)
+    expect(r.found).toEqual([])
+    expect(r.allFound).toBe(false)
+  })
+  it('counts a newly found real id', () => {
+    const r = reconcileFound([], mistakes, 'a1')
+    expect(r.found).toContain('a1')
+    expect(r.duplicate).toBe(false)
+    expect(r.allFound).toBe(false)
+  })
+  it('flags a duplicate find and does not double-count', () => {
+    const r = reconcileFound(['a1'], mistakes, 'a1')
+    expect(r.duplicate).toBe(true)
+    expect(r.found.length).toBe(1)
+  })
+  it('allFound only when all real mistakes collected', () => {
+    const r = reconcileFound(['a1', 'b2'], mistakes, 'c3')
+    expect(r.allFound).toBe(true)
+  })
+  it('ignores a null newFoundId (a wrong accusation)', () => {
+    const r = reconcileFound(['a1'], mistakes, null)
+    expect(r.found).toEqual(['a1'])
+    expect(r.duplicate).toBe(false)
+    expect(r.allFound).toBe(false)
   })
 })
