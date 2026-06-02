@@ -46,3 +46,55 @@ describe('htmlToPlainText', () => {
     expect(txt).toContain('Again')
   })
 })
+
+import { wrapAndValidate } from '../src/lib/factCheckerGen.js'
+
+describe('wrapAndValidate', () => {
+  const HTML = '<p>Born in 1889 in Braunau. Served as a corporal.</p>'
+
+  it('wraps located mistakes with data-fc-id + data-fc-mistake=true and substitutes the lie', () => {
+    const { tampered, mistakes } = wrapAndValidate(HTML, {
+      mistakes: [{ find: '1889', replacement: '1879', explanation: 'Born 1889.' }],
+      decoys: [],
+    })
+    expect(tampered).toContain('data-fc-mistake="true"')
+    expect(tampered).toContain('1879')        // lie rendered
+    expect(tampered).not.toContain('1889')    // truth replaced in the body
+    expect(mistakes).toHaveLength(1)
+    expect(mistakes[0].span).toBe('1879')     // rendered false text (for hard matching)
+    expect(mistakes[0].correct).toBe('1889')  // truth (for reveal)
+    expect(mistakes[0].fcId).toBeTruthy()
+  })
+
+  it('wraps decoys with data-fc-mistake=false and leaves their text unchanged', () => {
+    const { tampered, decoys } = wrapAndValidate(HTML, {
+      mistakes: [],
+      decoys: [{ find: 'Braunau' }],
+    })
+    expect(tampered).toContain('data-fc-mistake="false"')
+    expect(tampered).toContain('Braunau')
+    expect(decoys).toHaveLength(1)
+    expect(decoys[0].span).toBe('Braunau')
+  })
+
+  it('DISCARDS items whose `find` is not present in the text (reachability guarantee)', () => {
+    const { mistakes } = wrapAndValidate(HTML, {
+      mistakes: [
+        { find: '1889', replacement: '1879', explanation: 'ok' },
+        { find: 'NOT_IN_TEXT', replacement: 'x', explanation: 'hallucinated' },
+      ],
+      decoys: [],
+    })
+    expect(mistakes).toHaveLength(1)
+    expect(mistakes[0].correct).toBe('1889')
+  })
+
+  it('assigns a unique fcId per wrapped region', () => {
+    const { mistakes, decoys } = wrapAndValidate(HTML, {
+      mistakes: [{ find: '1889', replacement: '1879', explanation: 'ok' }],
+      decoys: [{ find: 'corporal' }],
+    })
+    const ids = [...mistakes, ...decoys].map(x => x.fcId)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+})
