@@ -1,85 +1,89 @@
 import { describe, it, expect } from 'vitest'
 import {
   normalizeSelection,
+  matchesSpan,
   scoreAccusation,
   SCORE_CONFIG,
 } from '../src/lib/factChecker.js'
 
 describe('normalizeSelection', () => {
-  it('strips leading/trailing whitespace', () => {
-    expect(normalizeSelection('  corporal  ')).toBe('corporal')
-  })
-  it('strips leading article "the"', () => {
-    expect(normalizeSelection('the corporal')).toBe('corporal')
-  })
-  it('strips leading article "a"', () => {
-    expect(normalizeSelection('a sergeant')).toBe('sergeant')
-  })
-  it('strips leading article "an"', () => {
+  it('trims, lowercases, strips leading article', () => {
+    expect(normalizeSelection('  The Corporal ')).toBe('corporal')
     expect(normalizeSelection('an officer')).toBe('officer')
   })
-  it('lowercases result', () => {
-    expect(normalizeSelection('CORPORAL')).toBe('corporal')
-  })
-  it('handles multi-word span', () => {
-    expect(normalizeSelection('  Iron Cross First Class  ')).toBe('iron cross first class')
-  })
-  it('does not strip "the" from middle of text', () => {
+  it('does not strip "the" mid-string', () => {
     expect(normalizeSelection('in the army')).toBe('in the army')
   })
 })
 
-describe('scoreAccusation', () => {
+describe('matchesSpan (free-select overlap, server-side guard)', () => {
+  it('matches exact', () => {
+    expect(matchesSpan('1879', '1879')).toBe(true)
+  })
+  it('matches when selection is part of the false text', () => {
+    expect(matchesSpan('Munich', 'Munich')).toBe(true)
+    expect(matchesSpan('1879', '20 April 1879')).toBe(true) // span fully contains selection
+  })
+  it('matches when selection contains the false text plus a little context', () => {
+    expect(matchesSpan('20 April 1879', '1879')).toBe(true) // 12 chars <= 4*3
+  })
+  it('rejects over-selection (drag a whole sentence to win)', () => {
+    expect(matchesSpan('he was born on 20 April 1879 in a small town', '1879')).toBe(false)
+  })
+  it('rejects unrelated selection', () => {
+    expect(matchesSpan('Bavarian Army', '1879')).toBe(false)
+  })
+  it('rejects empty', () => {
+    expect(matchesSpan('', '1879')).toBe(false)
+  })
+})
+
+describe('scoreAccusation by fcId', () => {
   const mistakes = [
-    { span: 'corporal', correct: 'lance corporal', explanation: 'He held the rank of lance corporal.' },
-    { span: 'april 20', correct: 'April 20 is correct', explanation: 'April 20 is actually correct.' },
+    { fcId: 'a1', span: '1879', correct: '1889', explanation: 'Born 1889.' },
+    { fcId: 'b2', span: 'Munich', correct: 'Berlin', explanation: 'Died in Berlin.' },
   ]
 
-  it('returns correct=true and score delta for matching span', () => {
-    const result = scoreAccusation('corporal', mistakes, 'easy')
-    expect(result.correct).toBe(true)
-    expect(result.delta).toBe(SCORE_CONFIG.easy.correct)
-    expect(result.explanation).toBe('He held the rank of lance corporal.')
-    expect(result.answer).toBe('lance corporal')
+  it('correct mistake id → positive delta + reveal + foundId', () => {
+    const r = scoreAccusation({ fcId: 'a1' }, mistakes, 'easy')
+    expect(r.correct).toBe(true)
+    expect(r.delta).toBe(SCORE_CONFIG.easy.correct)
+    expect(r.answer).toBe('1889')
+    expect(r.explanation).toBe('Born 1889.')
+    expect(r.foundId).toBe('a1')
   })
 
-  it('returns correct=false and negative delta for wrong span', () => {
-    const result = scoreAccusation('braunau', mistakes, 'easy')
-    expect(result.correct).toBe(false)
-    expect(result.delta).toBe(SCORE_CONFIG.easy.wrong)
+  it('REGRESSION: id match works even though correct value "1889" is unrelated to span "1879"', () => {
+    const r = scoreAccusation({ fcId: 'a1' }, mistakes, 'medium')
+    expect(r.correct).toBe(true)
   })
 
-  it('normalizes the input before matching', () => {
-    const result = scoreAccusation('the corporal', mistakes, 'medium')
-    expect(result.correct).toBe(true)
+  it('decoy / stray id → wrong penalty', () => {
+    const r = scoreAccusation({ fcId: 'decoy-xyz' }, mistakes, 'medium')
+    expect(r.correct).toBe(false)
+    expect(r.delta).toBe(SCORE_CONFIG.medium.wrong)
   })
+})
 
-  it('uses correct score config per difficulty', () => {
-    const easy = scoreAccusation('corporal', mistakes, 'easy')
-    const hard = scoreAccusation('corporal', mistakes, 'hard')
-    expect(hard.delta).toBeGreaterThan(easy.delta)
+describe('scoreAccusation by selection (hard/hardcore)', () => {
+  const mistakes = [{ fcId: 'a1', span: '1879', correct: '1889', explanation: 'Born 1889.' }]
+
+  it('overlapping selection → correct, returns foundId', () => {
+    const r = scoreAccusation({ selection: '20 April 1879' }, mistakes, 'hard')
+    expect(r.correct).toBe(true)
+    expect(r.delta).toBe(SCORE_CONFIG.hard.correct)
+    expect(r.foundId).toBe('a1')
   })
-
-  it('returns correct=false with wrong-penalty delta for no match', () => {
-    const result = scoreAccusation('nonexistent', mistakes, 'medium')
-    expect(result.correct).toBe(false)
-    expect(result.delta).toBe(SCORE_CONFIG.medium.wrong)
+  it('non-overlapping selection → wrong', () => {
+    const r = scoreAccusation({ selection: 'Bavarian Army' }, mistakes, 'hard')
+    expect(r.correct).toBe(false)
+    expect(r.delta).toBe(SCORE_CONFIG.hard.wrong)
   })
+})
 
-  it('uses exact delta values from SCORE_CONFIG', () => {
-    const hard = scoreAccusation('corporal', mistakes, 'hard')
-    expect(hard.delta).toBe(SCORE_CONFIG.hard.correct)
-  })
-
-  it('falls back to medium config for unknown difficulty', () => {
-    const result = scoreAccusation('corporal', mistakes, 'legendary')
-    expect(result.correct).toBe(true)
-    expect(result.delta).toBe(SCORE_CONFIG.medium.correct)
-  })
-
-  it('handles empty string input gracefully', () => {
-    const result = scoreAccusation('', mistakes, 'medium')
-    expect(result.correct).toBe(false)
-    expect(result.delta).toBe(SCORE_CONFIG.medium.wrong)
+describe('SCORE_CONFIG', () => {
+  it('falls back to medium for unknown difficulty', () => {
+    const r = scoreAccusation({ fcId: 'a1' }, [{ fcId: 'a1', span: 'x', correct: 'y', explanation: 'z' }], 'legendary')
+    expect(r.delta).toBe(SCORE_CONFIG.medium.correct)
   })
 })
