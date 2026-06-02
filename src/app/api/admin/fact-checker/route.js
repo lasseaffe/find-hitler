@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { auth } from '@/auth'
+import { generateTamperedArticle } from '@/lib/factCheckerGen'
 
 async function requireAdmin() {
   const session = await auth()
@@ -52,5 +53,21 @@ export async function PATCH(request) {
   } catch (err) {
     console.error('[admin/fact-checker PATCH]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function POST(request) {
+  const denied = await requireAdmin()
+  if (denied) return denied
+
+  const { subject, difficulty = 'medium', category = 'history' } = await request.json()
+
+  try {
+    const draft = await generateTamperedArticle(subject || null, difficulty, category)
+    const created = await prisma.factCheckArticle.create({ data: draft })
+    return NextResponse.json({ ok: true, article: created })
+  } catch (err) {
+    console.error('[admin/fact-checker POST]', err)
+    return NextResponse.json({ error: err.message || 'Generation failed' }, { status: 500 })
   }
 }
