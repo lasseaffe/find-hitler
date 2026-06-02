@@ -123,3 +123,17 @@ model ChallengeResponse {
   won           Boolean
   playedAt      DateTime  @default(now())
 }
+
+model PageDistance {
+  id           String   @id @default(cuid())
+  startTitle   String
+  target       String   @default("Adolf Hitler")
+  minClicks    Int?     // null when status != "exact"
+  shortestPath String[] @default([]) // one concrete optimal path; [] when unknown
+  status       String   // "exact" | "capped" | "unreachable"
+  source       String   @default("baseline") // baseline | game | submission (later phases)
+  measuredAt   DateTime @default(now())
+
+  @@unique([startTitle, target])
+  @@index([target, minClicks])
+}
