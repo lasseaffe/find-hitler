@@ -1,6 +1,7 @@
 // scripts/six-degrees/report.mjs
 import { PrismaClient } from '@prisma/client'
 import { writeFileSync, mkdirSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 import { buildReport, renderMarkdown } from '../../src/lib/sixDegrees/report.js'
 
 const prisma = new PrismaClient()
@@ -18,6 +19,7 @@ export async function writeReport({ target = 'Adolf Hitler', cap = 8 } = {}) {
 }
 
 // Allow direct invocation: node scripts/six-degrees/report.mjs
-if (import.meta.url === `file://${process.argv[1]}`) {
+// (pathToFileURL handles Windows drive paths; a bare `file://${argv}` would not match here)
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   writeReport().then(() => prisma.$disconnect())
 }
