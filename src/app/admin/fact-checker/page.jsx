@@ -1,10 +1,16 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import DOMPurify from 'dompurify'
 
 export default function AdminFactChecker() {
   const router = useRouter()
+
+  function sanitize(html) {
+    if (typeof window === 'undefined') return html
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const DOMPurify = require('dompurify')
+    return DOMPurify.sanitize(html)
+  }
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('pending')
@@ -95,14 +101,14 @@ export default function AdminFactChecker() {
               </summary>
               <div
                 className="bg-[#0f172a] p-4 rounded text-sm leading-relaxed max-h-64 overflow-y-auto mt-2"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(a.tampered) }}
+                dangerouslySetInnerHTML={{ __html: sanitize(a.tampered) }}
               />
             </details>
 
             <div>
               <p className="text-[#94a3b8] text-xs mb-3 uppercase tracking-wider">Planted mistakes</p>
               <div className="flex flex-col gap-2">
-                {a.mistakes.map((m, i) => (
+                {(a.mistakes ?? []).map((m, i) => (
                   <div key={i} className="p-3 bg-[#0f172a] rounded">
                     <p className="text-red-400 text-sm">
                       &ldquo;{m.span}&rdquo; → <span className="text-green-400">{m.correct}</span>

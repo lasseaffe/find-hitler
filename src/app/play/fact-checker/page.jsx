@@ -25,11 +25,11 @@ export default function FactCheckerPage() {
     fetch(`/api/fact-checker/article?difficulty=${difficulty}`)
       .then(r => r.json())
       .then(data => {
-        if (data.error) { router.push('/'); return }
+        if (data.error) { setLoading(false); router.push('/'); return }
         setArticle(data)
         setLoading(false)
       })
-      .catch(() => router.push('/'))
+      .catch(() => { setLoading(false); router.push('/') })
   }, [difficulty, router])
 
   async function handleAccuse(text) {
