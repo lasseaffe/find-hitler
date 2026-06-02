@@ -24,9 +24,12 @@ describe('verifyPath', () => {
     expect(r.brokenAt).toBe(2) // last index — endpoint mismatch
   })
 
-  it('accepts a redirect-equivalent endpoint via canonicalize match', async () => {
-    const r = await verifyPath(['Start', 'A', 'B', 'adolf_hitler'], 'Adolf Hitler', {
-      getBodyLinks: async (n) => (n === 'B' ? ['adolf_hitler'] : graph[n] || []),
+  it('accepts an underscore/whitespace-variant endpoint via canonicalize match', async () => {
+    // canonicalize('Adolf_Hitler') === canonicalize('Adolf Hitler'); case is NOT
+    // normalized (Wikipedia titles are case-sensitive after char 1 — that is a
+    // redirect concern handled by resolveRedirects, not verifyPath).
+    const r = await verifyPath(['Start', 'A', 'B', 'Adolf_Hitler'], 'Adolf Hitler', {
+      getBodyLinks: async (n) => (n === 'B' ? ['Adolf_Hitler'] : graph[n] || []),
     })
     expect(r.valid).toBe(true)
   })

@@ -17,8 +17,8 @@ export async function verifyPath(path, target, {
       return { valid: false, brokenAt: i }
     }
   }
-  const last = canonicalize(path[path.length - 1]).toLowerCase()
-  if (last !== canonicalize(target).toLowerCase()) {
+  const last = canonicalize(path[path.length - 1])
+  if (last !== canonicalize(target)) {
     return { valid: false, brokenAt: path.length - 1 }
   }
   return { valid: true, brokenAt: null }
