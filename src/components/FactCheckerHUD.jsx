@@ -31,7 +31,7 @@ export default function FactCheckerHUD({ subject, found, total, score, accusatio
             <div className="flex flex-col items-end gap-0.5">
               <span className="text-[9px] text-[#64748b] tracking-[0.08em] uppercase">Latest</span>
               <span className={`px-2 py-0.5 rounded-full text-[11px] border ${chipColor(latest)}`}>
-                &ldquo;{latest.text}&rdquo; {chipSymbol(latest)}
+                &ldquo;{latest.label}&rdquo; {chipSymbol(latest)}
               </span>
             </div>
           )}
@@ -61,7 +61,7 @@ export default function FactCheckerHUD({ subject, found, total, score, accusatio
             key={i}
             className={`px-2 py-0.5 rounded-full text-[10px] border shrink-0 ${chipColor(acc)}`}
           >
-            {chipSymbol(acc)} &ldquo;{acc.text}&rdquo;
+            {chipSymbol(acc)} &ldquo;{acc.label}&rdquo;
           </span>
         ))}
       </div>
