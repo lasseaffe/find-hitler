@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateElo, getRankTier, RANKS } from '../src/lib/elo.js'
+import { calculateElo, getRankTier } from '../src/lib/elo.js'
 import { getRankLabel, getRankFromElo, TIER_THRESHOLDS } from '../src/lib/elo.js'
 
 describe('calculateElo', () => {
