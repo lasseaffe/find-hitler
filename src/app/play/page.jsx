@@ -204,7 +204,13 @@ function PlayGame() {
 
   // WIN -> dramatic FOUND HIM reveal, then results
   if (win && !win.timeUp) {
-    return <WinReveal onDone={() => router.push('/results')} />
+    return <WinReveal onDone={() => {
+      if (gameState?.challengeToken) {
+        router.push(`/challenge/${gameState.challengeToken}/result`)
+      } else {
+        router.push('/results')
+      }
+    }} />
   }
 
   // TIME UP -> brutalist loss screen
