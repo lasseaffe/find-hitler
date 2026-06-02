@@ -42,17 +42,23 @@ model VerificationToken {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  name      String?
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
   emailVerified DateTime?
-  image     String?
-  elo       Int       @default(1000)
-  rank      String    @default("BRONZE")
-  accounts  Account[]
-  sessions  Session[]
-  matches   Match[]
-  createdAt DateTime  @default(now())
+  image         String?
+  elo           Int       @default(1000)
+  rank          String    @default("BRONZE_5")
+  division      Int       @default(5)
+  streak        Int       @default(0)
+  longestStreak Int       @default(0)
+  lastPlayedAt  DateTime?
+  bests         Json      @default("{}")
+  badges        String[]  @default([])
+  accounts      Account[]
+  sessions      Session[]
+  matches       Match[]
+  createdAt     DateTime  @default(now())
 }
 
 model Match {
@@ -86,4 +92,34 @@ model FactCheckArticle {
   status      String    @default("pending")
   createdAt   DateTime  @default(now())
   approvedAt  DateTime?
+}
+
+model Challenge {
+  id             String              @id @default(cuid())
+  creatorId      String?
+  target         String
+  mode           String
+  startPage      String
+  creatorScore   Int
+  creatorPath    String[]
+  creatorClicks  Int
+  creatorSeconds Int
+  token          String              @unique @default(cuid())
+  responses      ChallengeResponse[]
+  createdAt      DateTime            @default(now())
+  expiresAt      DateTime
+}
+
+model ChallengeResponse {
+  id            String    @id @default(cuid())
+  challengeId   String
+  challenge     Challenge @relation(fields: [challengeId], references: [id])
+  responderId   String?
+  responderName String
+  score         Int
+  path          String[]
+  clicks        Int
+  seconds       Int
+  won           Boolean
+  playedAt      DateTime  @default(now())
 }
