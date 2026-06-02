@@ -3,7 +3,7 @@
 // Two-row HUD pinned to top of screen.
 // Row 1: article subject + latest accusation chip + found counter + score
 // Row 2: scrollable chips bar showing all accusations so far
-export default function FactCheckerHUD({ subject, found, total, score, accusations }) {
+export default function FactCheckerHUD({ subject, found, total, score, accusations = [] }) {
   const latest = accusations.at(-1) ?? null
 
   function chipColor(acc) {

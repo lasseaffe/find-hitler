@@ -12,7 +12,7 @@ function safeAttr(str) {
 // Renders the tampered Wikipedia article with accusation mechanic.
 // Easy/Medium: clickable pre-marked span buttons injected into HTML.
 // Hard/Hardcore: free-text mouse selection fires accusation.
-export default function FactCheckerArticle({ html, spans, difficulty, onAccuse, accused }) {
+export default function FactCheckerArticle({ html, spans, difficulty, onAccuse, accused = [] }) {
   const articleRef = useRef(null)
   const isHard = difficulty === 'hard' || difficulty === 'hardcore'
 
@@ -23,6 +23,12 @@ export default function FactCheckerArticle({ html, spans, difficulty, onAccuse, 
     if (!sel || sel.isCollapsed) return
     const text = sel.toString().trim()
     if (text.length < 2) return
+    // Only accuse text selected within the article itself
+    const range = sel.getRangeAt(0)
+    if (!articleRef.current || !articleRef.current.contains(range.commonAncestorContainer)) {
+      sel.removeAllRanges()
+      return
+    }
     onAccuse(text)
     sel.removeAllRanges()
   }
@@ -33,7 +39,7 @@ export default function FactCheckerArticle({ html, spans, difficulty, onAccuse, 
     let result = html
     for (const { text } of spans) {
       const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const regex = new RegExp(`(${escaped})`, '')
+      const regex = new RegExp(`(${escaped})`, 'g')
       const isAccused = accused.some(a => a.text.toLowerCase() === text.toLowerCase())
       const accusedClass = isAccused ? 'fc-span-accused' : ''
       result = result.replace(
