@@ -4,6 +4,8 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import RankBadge from '@/components/RankBadge'
 import HitlerMark from '@/components/ui/HitlerMark'
+import BadgeGrid from '@/components/BadgeGrid'
+import StreakBadge from '@/components/StreakBadge'
 
 function formatSeconds(s) {
   if (!s) return '—'
@@ -179,6 +181,22 @@ export default function ProfilePage() {
               </>
             )
           })()}
+        </div>
+
+        {/* streak + badges */}
+        <div className="border-t-4 border-ink px-5 py-4">
+          <section>
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="font-mono text-sm uppercase tracking-wider text-[#94a3b8]">Streak</h2>
+              <StreakBadge streak={user.streak} />
+            </div>
+            <p className="text-[11px] font-mono text-[#64748b]">Longest: {user.longestStreak ?? 0} days</p>
+          </section>
+
+          <section className="mt-6">
+            <h2 className="font-mono text-sm uppercase tracking-wider text-[#94a3b8] mb-3">Badges</h2>
+            <BadgeGrid earned={user.badges ?? []} />
+          </section>
         </div>
 
         <div className="grid grid-cols-2 gap-[3px] border-t-4 border-ink bg-ink">

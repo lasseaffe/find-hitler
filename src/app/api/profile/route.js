@@ -10,7 +10,7 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true, elo: true, rank: true, createdAt: true },
+    select: { id: true, name: true, email: true, elo: true, rank: true, createdAt: true, streak: true, longestStreak: true, badges: true, bests: true },
   })
 
   const matches = await prisma.match.findMany({
@@ -44,7 +44,13 @@ export async function GET() {
   const wins = await prisma.match.count({ where: { userId: session.user.id, won: true } })
 
   return NextResponse.json({
-    user,
+    user: {
+      ...user,
+      streak: user.streak ?? 0,
+      longestStreak: user.longestStreak ?? 0,
+      badges: user.badges ?? [],
+      bests: user.bests ?? {},
+    },
     matches: enriched,
     stats: { totalMatches, wins, winRate: totalMatches ? Math.round((wins / totalMatches) * 100) : 0 },
   })
