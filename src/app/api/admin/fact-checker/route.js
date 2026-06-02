@@ -5,6 +5,9 @@ import { auth } from '@/lib/auth'
 async function requireAdmin() {
   const session = await auth()
   const adminEmail = process.env.ADMIN_EMAIL
+  if (!adminEmail) {
+    console.warn('[admin] ADMIN_EMAIL env var is not set')
+  }
   if (!session?.user?.email || session.user.email !== adminEmail) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -18,12 +21,16 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status') ?? 'pending'
 
-  const articles = await db.factCheckArticle.findMany({
-    where: { status },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  return NextResponse.json({ articles })
+  try {
+    const articles = await db.factCheckArticle.findMany({
+      where: { status },
+      orderBy: { createdAt: 'desc' },
+    })
+    return NextResponse.json({ articles })
+  } catch (err) {
+    console.error('[admin/fact-checker GET]', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 export async function PATCH(request) {
@@ -39,6 +46,11 @@ export async function PATCH(request) {
     ? { status: 'approved', approvedAt: new Date() }
     : { status: 'rejected' }
 
-  const updated = await db.factCheckArticle.update({ where: { id }, data })
-  return NextResponse.json({ ok: true, article: updated })
+  try {
+    const updated = await db.factCheckArticle.update({ where: { id }, data })
+    return NextResponse.json({ ok: true, article: updated })
+  } catch (err) {
+    console.error('[admin/fact-checker PATCH]', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
