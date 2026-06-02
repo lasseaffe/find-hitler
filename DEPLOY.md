@@ -61,3 +61,14 @@ docker run -p 3004:3004 find-hitler
   instance. Do **not** scale to multiple instances without moving that state to a shared
   store (the deferred Supabase Realtime migration).
 - Build needs ~512MB+; Render free build env is sufficient.
+
+## Fact Checker generation
+
+The Fact Checker mode tampers real Wikipedia articles with Claude. Set:
+
+- `ANTHROPIC_API_KEY` — required by the admin "Generate" button and the batch script.
+
+Batch-generate pending articles (reviewed in /admin/fact-checker before they go live):
+
+    node --env-file=.env.local scripts/generate-fact-checker.mjs --count 5 --difficulty medium --category history
+    node --env-file=.env.local scripts/generate-fact-checker.mjs --subjects subjects.txt --difficulty hard
