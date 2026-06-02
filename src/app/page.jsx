@@ -25,6 +25,7 @@ const MODES = [
   { value: 'jesus',    label: '5-Clicks',          desc: 'PAR · 5 ROUNDS · TARGET = JESUS', shortDesc: 'TO JESUS' },
   { value: 'daily',    label: 'Daily',             desc: 'ONE ATTEMPT · SAME FOR ALL',   shortDesc: 'ONE SHOT' },
   { value: 'nohub',    label: 'No-Hub',            desc: 'HUBS BOUNCE YOU · COST AN UNDO', shortDesc: 'HUB PENALTY' },
+  { value: 'fact-checker', label: 'Fact Checker', desc: 'A Wikipedia article has been tampered with. Find the planted inaccuracies using only your knowledge.', shortDesc: 'SPOT THE LIE' },
 ]
 
 export default function HomePage() {
@@ -46,6 +47,12 @@ export default function HomePage() {
   const handleStart = () => {
     if (!playerName.trim()) { setError('Enter a codename to continue'); return }
     setError('')
+
+    if (mode === 'fact-checker') {
+      const params = new URLSearchParams({ difficulty: hardcore ? 'hard' : 'medium' })
+      router.push(`/play/fact-checker?${params}`)
+      return
+    }
 
     if (playType === 'solo') {
       primeAudio() // unlock audio inside the click gesture
