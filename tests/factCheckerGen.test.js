@@ -124,6 +124,59 @@ describe('stripTruthForClient', () => {
 
 import { buildTamperPrompt, parseTamperJson } from '../src/lib/llm.js'
 
+import { generateTamperedArticle, MISTAKE_COUNTS } from '../src/lib/factCheckerGen.js'
+
+const FAKE_WIKI = async () => ({
+  cleanHtml: '<p>Born in 1889 in Braunau. Served as a corporal in the army.</p>',
+  title: 'Adolf Hitler',
+  validLinks: [],
+})
+
+describe('MISTAKE_COUNTS', () => {
+  it('defines the per-difficulty mistake budget', () => {
+    expect(MISTAKE_COUNTS).toMatchObject({ easy: 3, medium: 4, hard: 5, hardcore: 6 })
+  })
+})
+
+describe('generateTamperedArticle', () => {
+  it('produces a pending article with wrapped mistakes + source attribution', async () => {
+    const fakeLLM = async () => ({
+      mistakes: [{ find: '1889', replacement: '1879', explanation: 'Born 1889.' }],
+      decoys: [{ find: 'Braunau' }],
+    })
+    const out = await generateTamperedArticle('Adolf Hitler', 'easy', 'history', {
+      fetchWiki: FAKE_WIKI, callLLM: fakeLLM,
+    })
+    expect(out.status).toBe('pending')
+    expect(out.difficulty).toBe('easy')
+    expect(out.category).toBe('history')
+    expect(out.subject).toBe('Adolf Hitler')
+    expect(out.mistakes.length).toBeGreaterThanOrEqual(1)
+    expect(out.mistakes[0]).toMatchObject({ span: '1879', correct: '1889' })
+    expect(out.tampered).toContain('data-fc-mistake="true"')
+    expect(out.sourceUrl).toContain('Adolf_Hitler')
+  })
+
+  it('throws when ZERO locatable mistakes survive after retries', async () => {
+    const badLLM = async () => ({
+      mistakes: [{ find: 'NOT_IN_TEXT', replacement: 'x', explanation: 'hallucinated' }],
+      decoys: [],
+    })
+    await expect(
+      generateTamperedArticle('Adolf Hitler', 'easy', 'history', { fetchWiki: FAKE_WIKI, callLLM: badLLM })
+    ).rejects.toThrow(/locatable mistakes/i)
+  })
+
+  it('uses getRandomWikiPage when no subject is given', async () => {
+    const pickRandom = async () => 'Adolf Hitler'
+    const fakeLLM = async () => ({ mistakes: [{ find: '1889', replacement: '1879', explanation: 'e' }], decoys: [] })
+    const out = await generateTamperedArticle(null, 'easy', 'history', {
+      fetchWiki: FAKE_WIKI, callLLM: fakeLLM, pickRandom,
+    })
+    expect(out.subject).toBe('Adolf Hitler')
+  })
+})
+
 describe('buildTamperPrompt', () => {
   it('states the required mistake + decoy counts and the unambiguous-falsehood rule', () => {
     const p = buildTamperPrompt('Some article text.', 5, 8)

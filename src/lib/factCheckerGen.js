@@ -1,5 +1,7 @@
 import * as cheerio from 'cheerio'
 import { randomUUID } from 'node:crypto'
+import { fetchAndSanitizeWiki, getRandomWikiPage } from './wikipedia.js'
+import { callTamperLLM } from './llm.js'
 
 // How many sections (beyond the lead) each difficulty includes.
 const SECTION_BUDGET = { easy: 0, medium: 3, hard: Infinity, hardcore: Infinity }
@@ -71,6 +73,50 @@ export function wrapAndValidate(html, llm) {
   }
 
   return { tampered: $.html(), mistakes, decoys }
+}
+
+export const MISTAKE_COUNTS = { easy: 3, medium: 4, hard: 5, hardcore: 6 }
+
+function wikiUrl(title) {
+  return `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
+}
+
+// deps is injectable for tests: { fetchWiki, pickRandom, callLLM }.
+export async function generateTamperedArticle(subject, difficulty, category, deps = {}) {
+  const fetchWiki = deps.fetchWiki ?? fetchAndSanitizeWiki
+  const pickRandom = deps.pickRandom ?? getRandomWikiPage
+  const callLLM = deps.callLLM ?? callTamperLLM
+
+  const subj = subject ?? (await pickRandom())
+  const { cleanHtml, title } = await fetchWiki(subj)
+  const trimmed = trimByDifficulty(cleanHtml, difficulty)
+  const required = MISTAKE_COUNTS[difficulty] ?? MISTAKE_COUNTS.medium
+  const decoyCount = Math.round(required * 1.5)
+  const plain = htmlToPlainText(trimmed)
+
+  let best = { tampered: trimmed, mistakes: [], decoys: [] }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const llm = await callLLM(plain, required, decoyCount)
+    const result = wrapAndValidate(trimmed, llm)
+    if (result.mistakes.length > best.mistakes.length) best = result
+    if (best.mistakes.length >= required) break
+  }
+  if (best.mistakes.length < 1) {
+    throw new Error(`Could not plant locatable mistakes for "${subj}" after 3 attempts`)
+  }
+
+  return {
+    title,
+    subject: title,
+    category: category ?? 'history',
+    difficulty,
+    tampered: best.tampered,
+    mistakes: best.mistakes,
+    decoys: best.decoys,
+    sourceTitle: title,
+    sourceUrl: wikiUrl(title),
+    status: 'pending',
+  }
 }
 
 // Prepare the article HTML for the browser. The browser must never learn which regions
