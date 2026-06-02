@@ -8,7 +8,7 @@ import { getSpeedrunHubs } from '@/lib/speedrunHubs.js'
 const VALID_MODES = ['classic', 'speedrun', 'golf', 'jesus', 'daily', 'nohub']
 
 export async function POST(request) {
-  const { target, mode, playerName, hardcore = false } = await request.json()
+  const { target, mode, playerName, hardcore = false, forcedStartPage } = await request.json()
 
   if (!mode || !playerName) {
     return NextResponse.json({ error: 'Missing mode or playerName' }, { status: 400 })
@@ -20,7 +20,13 @@ export async function POST(request) {
   let resolvedTarget = target
   let startTitle
 
-  if (mode === 'daily') {
+  // Challenge context: use the same start page as the challenger
+  if (forcedStartPage) {
+    if (!resolvedTarget) {
+      return NextResponse.json({ error: 'Missing target' }, { status: 400 })
+    }
+    startTitle = forcedStartPage
+  } else if (mode === 'daily') {
     const pair = getDailyPair()
     resolvedTarget = pair.target
     startTitle = pair.start

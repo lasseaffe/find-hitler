@@ -31,25 +31,68 @@ function PlayGame() {
     if (initializedRef.current) return
     initializedRef.current = true
 
-    const raw = sessionStorage.getItem('gameInit')
-    if (!raw) { router.push('/'); return }
-    const init = JSON.parse(raw)
-    sessionStorage.removeItem('gameInit')
-    playerNameRef.current = init.playerName || 'You'
-    setGameState({
-      gameId: init.gameId,
-      playerId: init.playerId,
-      target: init.target,
-      mode: init.mode,
-      hardcore: init.hardcore || false,
-      startPage: init.title,
-      timeLimitSeconds: init.timeLimitSeconds || null,
-    })
-    setHtml(init.html)
-    setCurrentPageTitle(init.title || '')
-    setClicks(init.clicks)
-    setUndoTokens(init.undoTokens)
-    if (init.jesusRound) setJesusRound(init.jesusRound)
+    async function initGame() {
+      const raw = sessionStorage.getItem('gameInit')
+      const challengeRaw = sessionStorage.getItem('challengeContext')
+
+      if (challengeRaw) {
+        sessionStorage.removeItem('challengeContext')
+        const ctx = JSON.parse(challengeRaw)
+        playerNameRef.current = ctx.responderName || 'You'
+        // Fetch game start with the forced start page
+        try {
+          const res = await fetch('/api/game/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              target: ctx.target,
+              mode: ctx.mode,
+              playerName: ctx.responderName,
+              forcedStartPage: ctx.startPage,
+            }),
+          })
+          const data = await res.json()
+          if (!res.ok) { router.push('/'); return }
+          setGameState({
+            gameId: data.gameId,
+            playerId: data.playerId,
+            target: data.target,
+            mode: ctx.mode,
+            hardcore: false,
+            startPage: data.title,
+            timeLimitSeconds: data.timeLimitSeconds || null,
+            challengeId: ctx.challengeId,
+            challengeToken: ctx.token,
+            responderName: ctx.responderName,
+          })
+          setHtml(data.html)
+          setCurrentPageTitle(data.title || '')
+          setClicks(data.clicks)
+          setUndoTokens(data.undoTokens)
+        } catch { router.push('/') }
+        return
+      }
+
+      if (!raw) { router.push('/'); return }
+      const gameInit = JSON.parse(raw)
+      sessionStorage.removeItem('gameInit')
+      playerNameRef.current = gameInit.playerName || 'You'
+      setGameState({
+        gameId: gameInit.gameId,
+        playerId: gameInit.playerId,
+        target: gameInit.target,
+        mode: gameInit.mode,
+        hardcore: gameInit.hardcore || false,
+        startPage: gameInit.title,
+        timeLimitSeconds: gameInit.timeLimitSeconds || null,
+      })
+      setHtml(gameInit.html)
+      setCurrentPageTitle(gameInit.title || '')
+      setClicks(gameInit.clicks)
+      setUndoTokens(gameInit.undoTokens)
+      if (gameInit.jesusRound) setJesusRound(gameInit.jesusRound)
+    }
+    initGame()
   }, [router])
 
   const handleTimeUp = useCallback(() => {
@@ -100,6 +143,27 @@ function PlayGame() {
           clicks: data.clicks, time: data.time, score: data.score, playerName,
           path: data.path || [],
         })
+        if (gameState.challengeId) {
+          try {
+            await fetch('/api/challenge/respond', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                challengeId: gameState.challengeId,
+                responderName: gameState.responderName,
+                score: data.score,
+                path: data.path || [],
+                clicks: data.clicks,
+                seconds: data.time ?? 0,
+              }),
+            })
+            sessionStorage.setItem('challengeResult', JSON.stringify({
+              score: data.score,
+              clicks: data.clicks,
+              seconds: data.time ?? 0,
+            }))
+          } catch { /* non-fatal */ }
+        }
         setWin({ score: data.score, clicks: data.clicks, time: data.time, parGrade: data.parGrade || null, parDelta: data.parDelta ?? null })
       } else {
         setHtml(data.html)
