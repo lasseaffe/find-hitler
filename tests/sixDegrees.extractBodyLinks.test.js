@@ -1,8 +1,9 @@
 // tests/sixDegrees.extractBodyLinks.test.js
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { extractBodyLinks } from '../src/lib/sixDegrees/extractBodyLinks.js'
 import { fetchAndSanitizeWiki } from '../src/lib/wikipedia.js'
-import { vi, beforeEach, afterEach } from 'vitest'
+
+afterEach(() => vi.unstubAllGlobals())
 
 const FIXTURE_HTML = `
 <div class="mw-parser-output">
@@ -42,7 +43,6 @@ describe('extractBodyLinks', () => {
       json: () => Promise.resolve({ parse: { title: 'Brazil', text: { '*': FIXTURE_HTML } } }),
     }))
     const { validLinks } = await fetchAndSanitizeWiki('Brazil')
-    vi.unstubAllGlobals()
     const links = extractBodyLinks(FIXTURE_HTML)
     expect([...links].sort()).toEqual([...validLinks].sort())
   })
