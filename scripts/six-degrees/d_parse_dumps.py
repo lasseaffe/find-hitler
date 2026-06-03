@@ -311,6 +311,8 @@ def main(argv=None):
     ap.add_argument("--dump-date", default=date.today().isoformat())
     ap.add_argument("--top", type=int, default=100)
     ap.add_argument("--rebuild", action="store_true", help="rebuild graph.sqlite even if present")
+    ap.add_argument("--lowmem", action="store_true",
+                    help="force the on-disk low-memory build (use on a RAM-starved machine)")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args(argv)
 
@@ -336,8 +338,18 @@ def main(argv=None):
         missing = [p for p in paths.values() if not os.path.exists(p)]
         if missing:
             raise SystemExit("Missing dump files (run d-fetch-dumps.mjs first):\n  " + "\n  ".join(missing))
-        print("Building graph from dumps (this is the slow part)...")
-        conn = build_graph(paths, args.work_db)
+        if args.lowmem:
+            print("Building graph (low-memory on-disk path)...")
+            conn = build_graph_lowmem(paths, args.work_db)
+        else:
+            print("Building graph from dumps (this is the slow part)...")
+            try:
+                conn = build_graph(paths, args.work_db)
+            except MemoryError:
+                import gc
+                gc.collect()  # finalize the orphaned fast-build connection so the db file can be reused
+                print("MemoryError in fast build — falling back to low-memory on-disk path...")
+                conn = build_graph_lowmem(paths, args.work_db)
 
     title = args.target.replace(" ", "_")
     target_id = resolve_target_id(conn, title)
