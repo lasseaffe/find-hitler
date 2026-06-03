@@ -1,12 +1,13 @@
 // globalThis persists across Next.js hot reloads in dev
 const games = globalThis._gamesStore || (globalThis._gamesStore = new Map())
 
-export function createGame({ target, mode, hardcore = false, playerId, playerName, startPage, cleanHtml, validLinks }) {
+export function createGame({ target, mode, hubPenalty = false, playerId, playerName, startPage, cleanHtml, validLinks, undoTokens = 3, timeLimitSeconds = null }) {
   const gameId = Math.random().toString(36).slice(2, 10)
   games.set(gameId, {
     target,
     mode,
-    hardcore,
+    hubPenalty,
+    timeLimitSeconds,
     startTime: Date.now(),
     players: {
       [playerId]: {
@@ -15,7 +16,7 @@ export function createGame({ target, mode, hardcore = false, playerId, playerNam
         _currentHtml: cleanHtml,
         history: [],
         clicks: 0,
-        undoTokens: hardcore ? 0 : 3,
+        undoTokens,
         allowedMoves: [...validLinks],
       },
     },
@@ -80,7 +81,7 @@ export function addPlayerToGame(gameId, playerId, playerName, startPage, cleanHt
     _currentHtml: cleanHtml,
     history: [],
     clicks: 0,
-    undoTokens: game.hardcore ? 0 : 3,
+    undoTokens: 3,
     allowedMoves: [...validLinks],
   }
 }
