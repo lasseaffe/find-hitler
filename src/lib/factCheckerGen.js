@@ -95,14 +95,20 @@ export async function generateTamperedArticle(subject, difficulty, category, dep
   const plain = htmlToPlainText(trimmed)
 
   let best = { tampered: trimmed, mistakes: [], decoys: [] }
+  let lastErr = null
   for (let attempt = 0; attempt < 3; attempt++) {
-    const llm = await callLLM(plain, required, decoyCount)
-    const result = wrapAndValidate(trimmed, llm)
-    if (result.mistakes.length > best.mistakes.length) best = result
-    if (best.mistakes.length >= required) break
+    try {
+      const llm = await callLLM(plain, required, decoyCount)
+      const result = wrapAndValidate(trimmed, llm)
+      if (result.mistakes.length > best.mistakes.length) best = result
+      if (best.mistakes.length >= required) break
+    } catch (err) {
+      // Transient LLM/parse failures (e.g. an occasional malformed JSON response) just retry.
+      lastErr = err
+    }
   }
   if (best.mistakes.length < 1) {
-    throw new Error(`Could not plant locatable mistakes for "${subj}" after 3 attempts`)
+    throw new Error(`Could not plant locatable mistakes for "${subj}" after 3 attempts${lastErr ? `: ${lastErr.message}` : ''}`)
   }
 
   return {

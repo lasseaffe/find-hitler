@@ -7,10 +7,9 @@ if (!process.env.DATABASE_URL) {
   console.error('Run with --env-file=.env.local (DATABASE_URL required).')
   process.exit(1)
 }
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.error('ANTHROPIC_API_KEY is required for tampering.')
-  process.exit(1)
-}
+// Tampering uses the LLM configured in src/lib/llm.js — by default a local Ollama model
+// (free, no key). Set FC_LLM_BASE_URL / FC_LLM_MODEL / FC_LLM_API_KEY to use another provider.
+console.log(`LLM: ${process.env.FC_LLM_BASE_URL || 'http://localhost:11434/v1'} · model ${process.env.FC_LLM_MODEL || 'llama3.1:8b'}`)
 
 function arg(name, fallback) {
   const i = process.argv.indexOf(`--${name}`)

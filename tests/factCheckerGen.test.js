@@ -212,3 +212,25 @@ describe('parseTamperJson', () => {
     expect(() => parseTamperJson('I cannot help with that.')).toThrow()
   })
 })
+
+describe('parseTamperJson — local reasoning-model output', () => {
+  it('strips <think>…</think> before extracting JSON', () => {
+    const out = parseTamperJson('<think>Let me find some facts... maybe {not this}</think>\n{"mistakes":[{"find":"1889","replacement":"1879","explanation":"e"}],"decoys":[]}')
+    expect(out.mistakes[0].find).toBe('1889')
+    expect(out.mistakes).toHaveLength(1)
+  })
+})
+
+describe('generateTamperedArticle — retry resilience', () => {
+  it('retries when the LLM call throws (transient bad response) and still succeeds', async () => {
+    let n = 0
+    const flakyLLM = async () => {
+      n++
+      if (n === 1) throw new Error('No JSON object found in LLM response')
+      return { mistakes: [{ find: '1889', replacement: '1879', explanation: 'e' }], decoys: [] }
+    }
+    const out = await generateTamperedArticle('Adolf Hitler', 'easy', 'history', { fetchWiki: FAKE_WIKI, callLLM: flakyLLM })
+    expect(out.mistakes.length).toBeGreaterThanOrEqual(1) // recovered despite the first call throwing
+    expect(n).toBeGreaterThanOrEqual(2)                   // did not give up on the first failure
+  })
+})
