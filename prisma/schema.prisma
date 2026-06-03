@@ -57,8 +57,13 @@ model User {
   badges        String[]  @default([])
   accounts      Account[]
   sessions      Session[]
-  matches       Match[]
-  createdAt     DateTime  @default(now())
+  matches                Match[]
+  friendRequestsSent     Friendship[]  @relation("FriendRequests")
+  friendRequestsReceived Friendship[]  @relation("FriendAddressees")
+  friendCode             FriendCode?
+  lobbyInvitesSent       LobbyInvite[] @relation("InvitesSent")
+  lobbyInvitesReceived   LobbyInvite[] @relation("InvitesReceived")
+  createdAt              DateTime      @default(now())
 }
 
 model Match {
@@ -79,6 +84,38 @@ model Match {
   totalPlayers Int      @default(1)
   opponentIds  String[]
   playedAt     DateTime @default(now())
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  requester   User     @relation("FriendRequests",   fields: [requesterId], references: [id])
+  addressee   User     @relation("FriendAddressees", fields: [addresseeId], references: [id])
+
+  @@unique([requesterId, addresseeId])
+}
+
+model FriendCode {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model LobbyInvite {
+  id         String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  lobbyCode  String
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  from       User     @relation("InvitesSent",     fields: [fromUserId], references: [id])
+  to         User     @relation("InvitesReceived", fields: [toUserId],   references: [id])
 }
 
 model FactCheckArticle {
