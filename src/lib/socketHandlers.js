@@ -8,12 +8,37 @@ import { joinQueue, leaveQueue, findMatch } from './rankedQueue.js'
 import { createDuel, getDuel, applyDamage, isDuelOver, advanceRound } from './hpDuel.js'
 import { calculateHpDamage } from './bfsDistance.js'
 
+// userId → Set<socketId> — tracks currently connected authenticated users
+export const onlineUsers = globalThis._onlineUsers || (globalThis._onlineUsers = new Map())
+
+export function isOnline(userId) {
+  const sockets = onlineUsers.get(userId)
+  return !!(sockets && sockets.size > 0)
+}
+
+export function emitToUser(userId, event, data) {
+  const sockets = onlineUsers.get(userId)
+  if (!sockets) return
+  const io = globalThis._io
+  if (!io) return
+  for (const socketId of sockets) {
+    io.to(socketId).emit(event, data)
+  }
+}
+
 function normTitle(t) {
   return decodeURIComponent(t).replace(/_/g, ' ').trim().toLowerCase()
 }
 
 export function setupSocketHandlers(io) {
   io.on('connection', (socket) => {
+
+    // Track authenticated users for online presence + invite delivery
+    const userId = socket.handshake.auth?.userId
+    if (userId) {
+      if (!onlineUsers.has(userId)) onlineUsers.set(userId, new Set())
+      onlineUsers.get(userId).add(socket.id)
+    }
 
     // --- CREATE ROOM ---
     socket.on('room:create', ({ playerName, mode, target, botCount, maxPlayers }) => {
@@ -54,7 +79,7 @@ export function setupSocketHandlers(io) {
 
       // Fetch a shared start page for all players
       const startTitle = await getRandomWikiPage()
-      const { cleanHtml, validLinks, title } = await fetchAndSanitizeWiki(startTitle)
+      const { cleanHtml, validLinks, title } = await fetchAndSanitizeWiki(startTitle, room.target)
 
       // Create a single shared game for this room using host's id
       const hostPlayer = room.players.get(room.host)
@@ -128,6 +153,14 @@ export function setupSocketHandlers(io) {
 
     // --- PLAYER DISCONNECT ---
     socket.on('disconnect', () => {
+      if (userId) {
+        const sockets = onlineUsers.get(userId)
+        if (sockets) {
+          sockets.delete(socket.id)
+          if (sockets.size === 0) onlineUsers.delete(userId)
+        }
+      }
+
       const roomCode = socket.data.roomCode
       if (!roomCode) return
       const room = getRoom(roomCode)
@@ -230,7 +263,7 @@ async function processMoveForPlayer({ io, roomCode, gameId, room, playerId, targ
   const allowed = player.allowedMoves.map(normTitle)
   if (!allowed.includes(normTitle(targetPage))) return
 
-  const { cleanHtml, validLinks, title } = await fetchAndSanitizeWiki(targetPage)
+  const { cleanHtml, validLinks, title } = await fetchAndSanitizeWiki(targetPage, game.target)
   updatePlayerMove(gameId, playerId, { nextPage: title, cleanHtml, validLinks })
 
   const updated = getPlayer(gameId, playerId)
@@ -309,7 +342,7 @@ async function processMoveForPlayer({ io, roomCode, gameId, room, playerId, targ
           } else {
             advanceRound(room.duelId)
             const newStart = await getRandomWikiPage()
-            const { cleanHtml: newHtml, validLinks: newLinks, title: newTitle } = await fetchAndSanitizeWiki(newStart)
+            const { cleanHtml: newHtml, validLinks: newLinks, title: newTitle } = await fetchAndSanitizeWiki(newStart, game.target)
             // Reset game state for next round
             for (const [pid] of room.players.entries()) {
               if (!room.players.get(pid)?.isBot) {
@@ -342,7 +375,7 @@ async function startRankedDuel(io, p1SocketId, p1Data, p2Entry) {
   const target = 'Adolf Hitler'
 
   const startTitle = await getRandomWikiPage()
-  const { cleanHtml, validLinks, title } = await fetchAndSanitizeWiki(startTitle)
+  const { cleanHtml, validLinks, title } = await fetchAndSanitizeWiki(startTitle, target)
 
   const { code } = createRoom({
     hostId: p1SocketId,

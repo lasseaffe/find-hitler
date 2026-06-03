@@ -32,22 +32,30 @@ export default function FactCheckerPage() {
       .catch(() => { setLoading(false); router.push('/') })
   }, [difficulty, router])
 
-  async function handleAccuse(text) {
+  async function handleAccuse(payload) {
     if (done || !article) return
-    if (accusations.some(a => a.text.toLowerCase() === text.toLowerCase())) return
+    const label = payload.label
+    // Dedupe: by fcId for clicks, by normalized label for selections.
+    const dup = accusations.some(a =>
+      (payload.fcId && a.fcId === payload.fcId) ||
+      (!payload.fcId && a.label?.toLowerCase() === label?.toLowerCase())
+    )
+    if (dup) return
 
     const res = await fetch('/api/fact-checker/accuse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         articleId: article.id,
-        selection: text,
-        foundSoFar: accusations.filter(a => a.correct === true).map(a => a.text),
+        fcId: payload.fcId,
+        selection: payload.selection,
+        foundSoFar: accusations.filter(a => a.correct && a.foundId).map(a => a.foundId),
       }),
     })
     const data = await res.json()
+    if (data.duplicate) return // already found this mistake (e.g., overlapping hard-mode selection)
 
-    const newAcc = { text, correct: data.correct, delta: data.delta }
+    const newAcc = { label, fcId: data.foundId ?? payload.fcId, correct: data.correct, delta: data.delta }
     setAccusations(prev => [...prev, newAcc])
     setScore(prev => prev + data.delta)
     if (data.correct) {
@@ -133,13 +141,18 @@ export default function FactCheckerPage() {
       />
       <div className="pt-24">
         <FactCheckerArticle
-          html={article.tampered}
-          spans={article.spans}
+          html={article.clientHtml}
           difficulty={difficulty}
           onAccuse={handleAccuse}
           accused={accusations}
         />
       </div>
+      {article.sourceUrl && (
+        <p className="text-center text-[11px] text-[#94a3b8] py-4 font-mono">
+          Adapted from Wikipedia (CC BY-SA) ·{' '}
+          <a href={article.sourceUrl} target="_blank" rel="noreferrer" className="underline">source</a>
+        </p>
+      )}
       {!done && (
         <div className="fixed bottom-4 right-4">
           <button

@@ -61,3 +61,27 @@ docker run -p 3004:3004 find-hitler
   instance. Do **not** scale to multiple instances without moving that state to a shared
   store (the deferred Supabase Realtime migration).
 - Build needs ~512MB+; Render free build env is sufficient.
+
+## Fact Checker generation
+
+The Fact Checker mode tampers real Wikipedia articles with an LLM via any OpenAI-compatible
+chat endpoint. **Defaults to a free local Ollama model — no API key, no cost.**
+
+Config (all optional; defaults shown):
+
+- `FC_LLM_BASE_URL` — default `http://localhost:11434/v1` (local Ollama).
+  For OpenRouter use `https://openrouter.ai/api/v1`.
+- `FC_LLM_MODEL` — default `llama3.1:8b`. Higher quality locally: `qwen3:14b`.
+  OpenRouter free example: `meta-llama/llama-3.3-70b-instruct:free`.
+- `FC_LLM_API_KEY` — only needed for hosted providers (e.g. OpenRouter). Ignored by Ollama.
+  (Falls back to `OPENROUTER_API_KEY` if set.)
+
+Local setup (free): install Ollama, then `ollama pull llama3.1:8b`.
+
+Batch-generate pending articles (reviewed in /admin/fact-checker before they go live):
+
+    node --env-file=.env.local scripts/generate-fact-checker.mjs --count 5 --difficulty medium --category history
+    node --env-file=.env.local scripts/generate-fact-checker.mjs --subjects subjects.txt --difficulty hard
+
+The admin "Generate" button uses the same configured LLM. Set these vars in `.env.local`
+(or the deploy environment) so the Next.js server process sees them.

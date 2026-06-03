@@ -8,7 +8,10 @@ let _socket = null
 // Singleton socket shared across all components in the same browser tab
 function getSocket() {
   if (!_socket) {
-    _socket = io({ path: '/socket.io', transports: ['websocket', 'polling'] })
+    const uid = typeof document !== 'undefined'
+      ? (document.body.dataset.uid || '')
+      : ''
+    _socket = io({ path: '/socket.io', transports: ['websocket', 'polling'], auth: { userId: uid } })
   }
   return _socket
 }

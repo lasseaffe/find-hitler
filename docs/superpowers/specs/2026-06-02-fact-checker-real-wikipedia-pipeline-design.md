@@ -186,7 +186,7 @@ Hard / Hardcore (free-select):
   No wrappers in the DOM. Player drag-selects any prose they suspect.
   mouseup → window.getSelection(), constrained to the article container
      → guard: ignore if selection collapsed, <2 chars, or longer than the longest
-       mistake span × 3 (over-select guard — can't drag a whole paragraph to win)
+       mistake span × 4 (over-select guard — can't drag a whole paragraph to win)
      → onAccuse({ selection: text })
 
 POST /api/fact-checker/accuse { articleId, fcId?|selection?, foundSoFar: [identity…] }

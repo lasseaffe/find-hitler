@@ -1,8 +1,8 @@
 // PWA manifest — served by Next at /manifest.webmanifest (auto-linked in <head>).
 export default function manifest() {
   return {
-    name: 'Find Hitler — WikiRace',
-    short_name: 'Find Hitler',
+    name: 'Six Clicks',
+    short_name: 'Six Clicks',
     description: 'A Wikipedia navigation race. Find the target in the fewest clicks.',
     start_url: '/',
     scope: '/',

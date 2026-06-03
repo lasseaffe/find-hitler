@@ -2,6 +2,8 @@ import './globals.css'
 import { Anton, Space_Mono } from 'next/font/google'
 import { SessionProvider } from 'next-auth/react'
 import PWARegister from '@/components/PWARegister'
+import InviteToast from '@/components/InviteToast'
+import { auth } from '@/auth'
 
 const anton = Anton({
   weight: '400',
@@ -18,10 +20,10 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata = {
-  title: 'FIND HITLER — WikiRace',
+  title: 'SIX CLICKS — WikiRace',
   description: 'A Wikipedia navigation race. Find the target in the fewest clicks.',
-  applicationName: 'Find Hitler',
-  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Find Hitler' },
+  applicationName: 'Six Clicks',
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Six Clicks' },
   icons: { icon: '/icon-192.png', apple: '/apple-icon.png' },
 }
 
@@ -32,12 +34,17 @@ export const viewport = {
   viewportFit: 'cover',
 }
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const session = await auth()
+  const uid = session?.user?.id ?? ''
   return (
     <html lang="en" className={`${anton.variable} ${spaceMono.variable}`}>
-      <body className="bg-paper text-ink font-sans antialiased">
+      <body className="bg-paper text-ink font-sans antialiased" data-uid={uid}>
         <PWARegister />
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <InviteToast />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   )
