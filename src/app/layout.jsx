@@ -2,6 +2,7 @@ import './globals.css'
 import { Anton, Space_Mono } from 'next/font/google'
 import { SessionProvider } from 'next-auth/react'
 import PWARegister from '@/components/PWARegister'
+import InviteToast from '@/components/InviteToast'
 import { auth } from '@/auth'
 
 const anton = Anton({
@@ -19,10 +20,10 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata = {
-  title: 'FIND HITLER — WikiRace',
+  title: 'SIX CLICKS — WikiRace',
   description: 'A Wikipedia navigation race. Find the target in the fewest clicks.',
-  applicationName: 'Find Hitler',
-  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Find Hitler' },
+  applicationName: 'Six Clicks',
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Six Clicks' },
   icons: { icon: '/icon-192.png', apple: '/apple-icon.png' },
 }
 
@@ -40,7 +41,10 @@ export default async function RootLayout({ children }) {
     <html lang="en" className={`${anton.variable} ${spaceMono.variable}`}>
       <body className="bg-paper text-ink font-sans antialiased" data-uid={uid}>
         <PWARegister />
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <InviteToast />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   )
