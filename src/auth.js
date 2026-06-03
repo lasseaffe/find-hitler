@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import Nodemailer from 'next-auth/providers/nodemailer'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 
 function generateFriendCode() {
@@ -18,7 +19,7 @@ async function createFriendCodeIfMissing(userId) {
       await prisma.friendCode.create({ data: { userId, code: generateFriendCode() } })
       return
     } catch (e) {
-      if (!e.message?.includes('Unique constraint')) throw e
+      if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')) throw e
     }
   }
 }
