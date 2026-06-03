@@ -49,20 +49,20 @@ describe('5 Clicks to Jesus — par scoring', () => {
 describe('Hardcore mode — game state', () => {
   it('undoTokens is 0 for hardcore game', () => {
     const gameId = createGame({
-      target: 'Jesus', mode: 'classic', hardcore: true,
+      target: 'Jesus', mode: 'classic', undoTokens: 0,
       playerId: 'hc1', playerName: 'Test',
       startPage: 'Coffee', cleanHtml: '<p>x</p>', validLinks: [],
     })
     expect(getPlayer(gameId, 'hc1').undoTokens).toBe(0)
   })
 
-  it('game stores hardcore flag', () => {
+  it('game stores hubPenalty flag', () => {
     const gameId = createGame({
-      target: 'Jesus', mode: 'golf', hardcore: true,
+      target: 'Jesus', mode: 'golf', hubPenalty: true,
       playerId: 'hc2', playerName: 'Test',
       startPage: 'Coffee', cleanHtml: '<p>x</p>', validLinks: [],
     })
-    expect(getGame(gameId).hardcore).toBe(true)
+    expect(getGame(gameId).hubPenalty).toBe(true)
   })
 })
 

@@ -1,14 +1,20 @@
-// src/app/api/game/start/route.js
 import { NextResponse } from 'next/server'
-import { fetchAndSanitizeWiki, getRandomWikiPage } from '@/lib/wikipedia.js'
+import { fetchAndSanitizeWiki, getRandomWikiPage, findStartPageAtDistance } from '@/lib/wikipedia.js'
 import { createGame } from '@/lib/gameState.js'
 import { getDailyPair } from '@/lib/dailyChallenge.js'
 import { getSpeedrunHubs } from '@/lib/speedrunHubs.js'
 
 const VALID_MODES = ['classic', 'speedrun', 'golf', 'jesus', 'daily', 'nohub']
 
+const DIFFICULTY = {
+  easy:   { undoTokens: 5, timeLimitSeconds: null,  hubPenalty: false, minHops: 1, maxHops: 2 },
+  normal: { undoTokens: 3, timeLimitSeconds: null,  hubPenalty: false, minHops: 3, maxHops: 4 },
+  hard:   { undoTokens: 1, timeLimitSeconds: 300,   hubPenalty: false, minHops: 5, maxHops: 6 },
+  brutal: { undoTokens: 0, timeLimitSeconds: 300,   hubPenalty: true,  minHops: 6, maxHops: 99 },
+}
+
 export async function POST(request) {
-  const { target, mode, playerName, hardcore = false, forcedStartPage } = await request.json()
+  const { target, mode, playerName, difficulty = 'normal', forcedStartPage } = await request.json()
 
   if (!mode || !playerName) {
     return NextResponse.json({ error: 'Missing mode or playerName' }, { status: 400 })
@@ -17,14 +23,15 @@ export async function POST(request) {
     return NextResponse.json({ error: `Unknown mode: ${mode}` }, { status: 400 })
   }
 
+  const diff = DIFFICULTY[difficulty] || DIFFICULTY.normal
+  // nohub mode always has hub penalty regardless of difficulty
+  const hubPenalty = diff.hubPenalty || mode === 'nohub'
+
   let resolvedTarget = target
   let startTitle
 
-  // Challenge context: use the same start page as the challenger
   if (forcedStartPage) {
-    if (!resolvedTarget) {
-      return NextResponse.json({ error: 'Missing target' }, { status: 400 })
-    }
+    if (!resolvedTarget) return NextResponse.json({ error: 'Missing target' }, { status: 400 })
     startTitle = forcedStartPage
   } else if (mode === 'daily') {
     const pair = getDailyPair()
@@ -37,11 +44,8 @@ export async function POST(request) {
     const hubs = getSpeedrunHubs(resolvedTarget)
     startTitle = hubs[Math.floor(Math.random() * hubs.length)]
   } else {
-    // classic, golf, nohub — random start
-    if (!resolvedTarget) {
-      return NextResponse.json({ error: 'Missing target' }, { status: 400 })
-    }
-    startTitle = await getRandomWikiPage()
+    if (!resolvedTarget) return NextResponse.json({ error: 'Missing target' }, { status: 400 })
+    startTitle = await findStartPageAtDistance(resolvedTarget, diff.minHops, diff.maxHops)
   }
 
   const { cleanHtml, validLinks, title } = await fetchAndSanitizeWiki(startTitle)
@@ -50,18 +54,15 @@ export async function POST(request) {
   const gameId = createGame({
     target: resolvedTarget,
     mode,
-    hardcore,
+    hubPenalty,
+    undoTokens: diff.undoTokens,
+    timeLimitSeconds: diff.timeLimitSeconds,
     playerId,
     playerName,
     startPage: title,
     cleanHtml,
     validLinks,
   })
-
-  const timeLimitSeconds = mode === 'golf' ? 300
-    : (mode === 'classic' && hardcore) ? 300
-    : (mode === 'speedrun' && hardcore) ? 150
-    : null
 
   return NextResponse.json({
     gameId,
@@ -70,8 +71,8 @@ export async function POST(request) {
     title,
     target: resolvedTarget,
     clicks: 0,
-    undoTokens: hardcore ? 0 : 3,
-    timeLimitSeconds,
+    undoTokens: diff.undoTokens,
+    timeLimitSeconds: diff.timeLimitSeconds,
     jesusRound: mode === 'jesus' ? 1 : null,
   })
 }

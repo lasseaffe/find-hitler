@@ -1,7 +1,28 @@
 import NextAuth from 'next-auth'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import Nodemailer from 'next-auth/providers/nodemailer'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
+
+function generateFriendCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let code = ''
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)]
+  return code
+}
+
+async function createFriendCodeIfMissing(userId) {
+  const existing = await prisma.friendCode.findUnique({ where: { userId } })
+  if (existing) return
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      await prisma.friendCode.create({ data: { userId, code: generateFriendCode() } })
+      return
+    } catch (e) {
+      if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')) throw e
+    }
+  }
+}
 
 // Render's free tier blocks outbound SMTP (ports 25/465/587), so we send the magic
 // link via Brevo's transactional HTTPS API (port 443) instead of an SMTP transport.
@@ -65,5 +86,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: '/login',
     verifyRequest: '/login?verify=true',
+  },
+  events: {
+    async createUser({ user }) {
+      if (user.id) await createFriendCodeIfMissing(user.id)
+    },
+    async signIn({ user }) {
+      if (user.id) await createFriendCodeIfMissing(user.id)
+    },
   },
 })

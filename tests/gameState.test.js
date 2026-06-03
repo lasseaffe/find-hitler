@@ -93,12 +93,12 @@ describe('game state', () => {
   })
 })
 
-describe('hardcore mode', () => {
-  it('starts with 0 undo tokens when hardcore=true', () => {
+describe('difficulty undoTokens', () => {
+  it('starts with 0 undo tokens when undoTokens=0 (brutal difficulty)', () => {
     const gameId = createGame({
       target: 'Adolf Hitler',
       mode: 'classic',
-      hardcore: true,
+      undoTokens: 0,
       playerId: 'p1',
       playerName: 'Test',
       startPage: 'Coffee',
@@ -109,11 +109,10 @@ describe('hardcore mode', () => {
     expect(player.undoTokens).toBe(0)
   })
 
-  it('starts with 3 undo tokens when hardcore=false', () => {
+  it('starts with 3 undo tokens by default (normal difficulty)', () => {
     const gameId = createGame({
       target: 'Jesus',
       mode: 'classic',
-      hardcore: false,
       playerId: 'p2',
       playerName: 'Test2',
       startPage: 'Coffee',
@@ -122,5 +121,23 @@ describe('hardcore mode', () => {
     })
     const player = getPlayer(gameId, 'p2')
     expect(player.undoTokens).toBe(3)
+  })
+
+  it('stores hubPenalty and timeLimitSeconds on game object', () => {
+    const gameId = createGame({
+      target: 'Adolf Hitler',
+      mode: 'classic',
+      hubPenalty: true,
+      timeLimitSeconds: 300,
+      undoTokens: 1,
+      playerId: 'p3',
+      playerName: 'Test3',
+      startPage: 'Coffee',
+      cleanHtml: '<p>test</p>',
+      validLinks: [],
+    })
+    const game = getGame(gameId)
+    expect(game.hubPenalty).toBe(true)
+    expect(game.timeLimitSeconds).toBe(300)
   })
 })
