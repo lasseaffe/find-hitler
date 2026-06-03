@@ -58,6 +58,40 @@ def parse_sql_tuples(values):
         yield fields
 
 
+def reverse_bfs_edges(conn, target_id, chunk=10000):
+    """Reverse-BFS from target over an edges(src,dst) table (edge src->dst means
+    'src links to dst'). Expanding in-neighbors (src where dst in frontier) outward
+    from the target yields each page's minimum forward distance TO the target."""
+    dist = {target_id: 0}
+    frontier = [target_id]
+    d = 0
+    while frontier:
+        d += 1
+        nxt = []
+        for i in range(0, len(frontier), chunk):
+            batch = frontier[i:i + chunk]
+            qmarks = ",".join(["?"] * len(batch))
+            cur = conn.execute(
+                f"SELECT src FROM edges WHERE dst IN ({qmarks})", batch)
+            for (src,) in cur:
+                if src not in dist:
+                    dist[src] = d
+                    nxt.append(src)
+        frontier = nxt
+    return dist
+
+
+def _selftest_bfs_edges():
+    conn = sqlite3.connect(":memory:")
+    conn.execute("CREATE TABLE edges (src INTEGER, dst INTEGER)")
+    # forward edges: A(4)->B(2), B(2)->T(1), C(3)->T(1); D(5) isolated
+    conn.executemany("INSERT INTO edges VALUES (?,?)", [(4, 2), (2, 1), (3, 1)])
+    conn.execute("CREATE INDEX ix ON edges(dst)")
+    dist = reverse_bfs_edges(conn, 1)
+    assert dist == {1: 0, 2: 1, 3: 1, 4: 2}, dist  # D(5) unreachable, absent
+    print("  bfs_edges (reverse_bfs_edges) OK")
+
+
 def _selftest_scanner():
     values = r"(1,0,'Simple',0),(2,0,'Has, comma',0),(3,0,'O\'Brien',0),(4,0,'Back\\slash',1),(5,0,'',0)"
     rows = list(parse_sql_tuples(values))
@@ -73,6 +107,7 @@ def _selftest_scanner():
 if __name__ == "__main__":
     if "--selftest" in sys.argv:
         _selftest_scanner()
+        _selftest_bfs_edges()
         print("ALL SELFTESTS PASSED")
         sys.exit(0)
     raise SystemExit("Not yet runnable; use --selftest (full main added in a later task).")
