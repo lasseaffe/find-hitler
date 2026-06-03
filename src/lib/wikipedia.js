@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio'
 
-export async function fetchAndSanitizeWiki(pageTitle) {
+export async function fetchAndSanitizeWiki(pageTitle, targetTitle = null) {
   const url = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=text&format=json&origin=*`
   const response = await fetch(url)
   const data = await response.json()
@@ -39,6 +39,39 @@ export async function fetchAndSanitizeWiki(pageTitle) {
     }
   })
 
+  // If the target name appears as plain text (no hyperlink), inject clickable <a> tags
+  // so the player isn't blocked when they can see the target but can't click it.
+  if (targetTitle) {
+    const targetText = decodeURIComponent(targetTitle).replace(/_/g, ' ')
+    const wikiKey = targetText.replace(/ /g, '_')
+    const alreadyLinked = validLinks.has(wikiKey) || validLinks.has(targetText)
+
+    if (!alreadyLinked) {
+      const escaped = targetText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(escaped, 'gi')
+      let injected = false
+
+      function injectInto(node) {
+        $(node).contents().each((_, child) => {
+          if (child.type === 'text') {
+            const newHtml = child.data.replace(regex, (match) =>
+              `<a data-wiki-target="${wikiKey}" href="#">${match}</a>`
+            )
+            if (newHtml !== child.data) {
+              $(child).replaceWith(newHtml)
+              injected = true
+            }
+          } else if (child.type === 'tag' && child.name !== 'a') {
+            injectInto(child)
+          }
+        })
+      }
+
+      injectInto(body[0])
+      if (injected) validLinks.add(wikiKey)
+    }
+  }
+
   return {
     cleanHtml: body.html(),
     validLinks: Array.from(validLinks),
@@ -51,4 +84,21 @@ export async function getRandomWikiPage() {
   const res = await fetch(url)
   const data = await res.json()
   return data.query.random[0].title
+}
+
+export async function validateWikiTitle(title) {
+  try {
+    const res = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`
+    )
+    if (!res.ok) return { valid: false }
+    const data = await res.json()
+    return {
+      valid: true,
+      canonicalTitle: data.titles?.normalized || data.title || title,
+      extract: data.extract || '',
+    }
+  } catch {
+    return { valid: false }
+  }
 }
