@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "six:baseline": "node scripts/six-degrees/run-baseline.mjs",
-    "six:report": "node scripts/six-degrees/report.mjs"
+    "six:report": "node scripts/six-degrees/report.mjs",
+    "six:fullgraph": "python scripts/six-degrees/c_distances.py"
   },
   "engines": {
     "node": ">=20"
