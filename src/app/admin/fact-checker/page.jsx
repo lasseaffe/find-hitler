@@ -15,6 +15,11 @@ export default function AdminFactChecker() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('pending')
   const [error, setError] = useState(null)
+  const [genSubject, setGenSubject] = useState('')
+  const [genDifficulty, setGenDifficulty] = useState('medium')
+  const [genCategory, setGenCategory] = useState('history')
+  const [generating, setGenerating] = useState(false)
+  const [genError, setGenError] = useState(null)
 
   useEffect(() => {
     setLoading(true)
@@ -43,9 +48,54 @@ export default function AdminFactChecker() {
     }
   }
 
+  async function generate() {
+    setGenerating(true); setGenError(null)
+    try {
+      const res = await fetch('/api/admin/fact-checker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: genSubject.trim() || null, difficulty: genDifficulty, category: genCategory }),
+      })
+      const d = await res.json()
+      if (!res.ok) { setGenError(d.error || 'Generation failed'); return }
+      setGenSubject('')
+      if (tab === 'pending') setArticles(prev => [d.article, ...prev])
+      else setTab('pending')
+    } catch {
+      setGenError('Generation failed')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-[#e2e8f0] p-8 font-mono">
       <h1 className="text-2xl font-bold mb-6">Fact Checker — Admin Queue</h1>
+
+      <div className="border border-[#334155] rounded p-4 bg-[#1e293b] mb-8">
+        <p className="text-sm uppercase tracking-wider text-[#94a3b8] mb-3">Generate from Wikipedia</p>
+        <div className="flex flex-wrap gap-3 items-end">
+          <input
+            value={genSubject} onChange={e => setGenSubject(e.target.value)}
+            placeholder="Subject (blank = random)"
+            className="bg-[#0f172a] border border-[#334155] rounded px-3 py-2 text-sm flex-1 min-w-[200px]"
+          />
+          <select value={genDifficulty} onChange={e => setGenDifficulty(e.target.value)}
+            className="bg-[#0f172a] border border-[#334155] rounded px-3 py-2 text-sm">
+            {['easy','medium','hard','hardcore'].map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <input
+            value={genCategory} onChange={e => setGenCategory(e.target.value)}
+            placeholder="category"
+            className="bg-[#0f172a] border border-[#334155] rounded px-3 py-2 text-sm w-32"
+          />
+          <button onClick={generate} disabled={generating}
+            className="px-4 py-2 bg-[#2563eb] hover:bg-blue-500 disabled:opacity-50 text-white rounded text-sm">
+            {generating ? 'Generating…' : 'Generate'}
+          </button>
+        </div>
+        {genError && <p className="text-red-400 text-sm mt-2">{genError}</p>}
+      </div>
 
       <div className="flex gap-4 mb-6">
         {['pending', 'approved', 'rejected'].map(t => (
@@ -118,6 +168,16 @@ export default function AdminFactChecker() {
                 ))}
               </div>
             </div>
+            {(a.decoys?.length ?? 0) > 0 && (
+              <div className="mt-3">
+                <p className="text-[#94a3b8] text-xs mb-2 uppercase tracking-wider">Decoys (look suspicious, are true)</p>
+                <div className="flex flex-wrap gap-2">
+                  {a.decoys.map((d, i) => (
+                    <span key={i} className="px-2 py-1 bg-[#0f172a] rounded text-xs text-[#cbd5e1]">{d.span}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

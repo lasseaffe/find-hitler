@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { scoreAccusation } from '@/lib/factChecker'
+import { scoreAccusation, reconcileFound } from '@/lib/factChecker'
 
 export async function POST(request) {
-  const { articleId, selection, foundSoFar = [] } = await request.json()
+  const { articleId, fcId, selection, foundSoFar = [] } = await request.json()
 
-  if (!articleId || typeof selection !== 'string' || !selection.trim()) {
-    return NextResponse.json({ error: 'articleId and selection required' }, { status: 400 })
+  if (!articleId || (!fcId && (typeof selection !== 'string' || !selection.trim()))) {
+    return NextResponse.json({ error: 'articleId and fcId or selection required' }, { status: 400 })
   }
 
   try {
@@ -15,20 +15,23 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Article not found' }, { status: 404 })
     }
 
-    // Use article's difficulty from DB — never trust client input for scoring
     const difficulty = article.difficulty ?? 'medium'
-    const result = scoreAccusation(selection, article.mistakes, difficulty)
+    const result = scoreAccusation({ fcId, selection }, article.mistakes, difficulty)
 
-    const allFound = result.correct
-      ? [...foundSoFar, selection].length >= article.mistakes.length
-      : foundSoFar.length >= article.mistakes.length
+    const { allFound, duplicate } = reconcileFound(
+      foundSoFar, article.mistakes, result.correct ? result.foundId : null
+    )
+    // A duplicate find (same mistake re-selected) scores nothing.
+    const delta = duplicate ? 0 : result.delta
 
     return NextResponse.json({
       correct: result.correct,
-      delta: result.delta,
-      explanation: result.explanation,
-      answer: result.answer,
+      delta,
+      explanation: duplicate ? null : result.explanation,
+      answer: duplicate ? null : result.answer,
+      foundId: result.foundId,
       allFound,
+      duplicate,
     })
   } catch (err) {
     console.error('[fact-checker/accuse]', err)

@@ -1,83 +1,69 @@
 'use client'
 import { useRef } from 'react'
 
-// Strip characters that could break out of an HTML attribute or tag context.
-// The html prop is server-generated game content (not user input), so full
-// DOMPurify is unnecessary. We only need to guard the data-span attribute
-// value, which is derived from the spans array (also server-generated).
-function safeAttr(str) {
-  return str.replace(/[<>"'`]/g, c => ({ '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]))
-}
-
-// Renders the tampered Wikipedia article with accusation mechanic.
-// Easy/Medium: clickable pre-marked span buttons injected into HTML.
-// Hard/Hardcore: free-text mouse selection fires accusation.
-export default function FactCheckerArticle({ html, spans, difficulty, onAccuse, accused = [] }) {
+// `html` is already prepared by the server per difficulty:
+//   easy/medium → contains <span data-fc-id> (no truth flag) → clickable chips
+//   hard/hardcore → no wrappers at all → free drag-select
+export default function FactCheckerArticle({ html, difficulty, onAccuse, accused = [] }) {
   const articleRef = useRef(null)
   const isHard = difficulty === 'hard' || difficulty === 'hardcore'
+  const accusedIds = new Set(accused.filter(a => a.fcId).map(a => a.fcId))
 
-  // Free-text handler for hard/hardcore
+  function handleClick(e) {
+    if (isHard) return
+    const el = e.target.closest('[data-fc-id]')
+    if (!el || !articleRef.current?.contains(el)) return
+    onAccuse({ fcId: el.dataset.fcId, label: el.textContent })
+  }
+
   function handleMouseUp() {
     if (!isHard) return
     const sel = window.getSelection()
     if (!sel || sel.isCollapsed) return
     const text = sel.toString().trim()
-    if (text.length < 2) return
-    // Only accuse text selected within the article itself
+    // Coarse client guard: ignore tiny or huge selections (server is authoritative).
+    if (text.length < 2 || text.length > 80) { sel.removeAllRanges(); return }
     const range = sel.getRangeAt(0)
     if (!articleRef.current || !articleRef.current.contains(range.commonAncestorContainer)) {
-      sel.removeAllRanges()
-      return
+      sel.removeAllRanges(); return
     }
-    onAccuse(text)
+    onAccuse({ selection: text, label: text })
     sel.removeAllRanges()
   }
 
-  // Inject clickable buttons for pre-marked spans (easy/medium)
-  function buildSpanHtml() {
-    if (!spans || spans.length === 0) return html
-    let result = html
-    for (const { text } of spans) {
-      const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const regex = new RegExp(`(${escaped})`, 'g')
-      const isAccused = accused.some(a => a.text.toLowerCase() === text.toLowerCase())
-      const accusedClass = isAccused ? 'fc-span-accused' : ''
-      result = result.replace(
-        regex,
-        `<button class="fc-span ${accusedClass}" data-span="${safeAttr(text)}">$1</button>`
-      )
+  // Mark already-accused chips (easy/medium) so they visibly lock in.
+  function decorate(rawHtml) {
+    if (isHard || accusedIds.size === 0) return rawHtml
+    let out = rawHtml
+    for (const id of accusedIds) {
+      out = out.replace(`data-fc-id="${id}"`, `data-fc-id="${id}" data-accused="true"`)
     }
-    return result
-  }
-
-  function handleClick(e) {
-    if (isHard) return
-    const btn = e.target.closest('.fc-span')
-    if (!btn) return
-    onAccuse(btn.dataset.span)
+    return out
   }
 
   return (
     <>
       <style>{`
-        .fc-span {
-          background: transparent;
-          border: none;
-          padding: 1px 2px;
-          border-radius: 2px;
+        .fc-mark [data-fc-id] {
+          background: #fffbe6;
+          border-bottom: 2px solid #cbb24a;
+          border-radius: 3px;
+          padding: 0 3px;
           cursor: pointer;
-          border-bottom: 1px dotted #94a3b8;
-          font: inherit;
-          color: inherit;
+          transition: background 120ms ease;
         }
-        .fc-span:hover { background: #fef9c3; color: #1a1a1a; }
-        .fc-span-accused { background: #fef08a !important; color: #1a1a1a !important; border-bottom: 2px solid #eab308 !important; }
+        .fc-mark [data-fc-id]:hover { background: #fde68a; }
+        .fc-mark [data-fc-id]:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
+        .fc-mark [data-fc-id][data-accused="true"] {
+          background: #fde047; border-bottom: 2px solid #a16207; font-weight: 600;
+        }
       `}</style>
       <div
         ref={articleRef}
-        className="wiki-article px-4 py-4 text-[14px] leading-relaxed"
+        className={isHard ? 'wiki-article px-4 py-4 text-[14px] leading-relaxed select-text'
+                          : 'fc-mark wiki-article px-4 py-4 text-[14px] leading-relaxed'}
         style={{ fontFamily: 'Georgia, "Linux Libertine", serif', background: '#fff', color: '#1a1a1a' }}
-        dangerouslySetInnerHTML={{ __html: isHard ? html : buildSpanHtml() }}
+        dangerouslySetInnerHTML={{ __html: decorate(html) }}
         onClick={handleClick}
         onMouseUp={handleMouseUp}
       />
