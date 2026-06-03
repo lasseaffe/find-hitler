@@ -2,6 +2,7 @@ import './globals.css'
 import { Anton, Space_Mono } from 'next/font/google'
 import { SessionProvider } from 'next-auth/react'
 import PWARegister from '@/components/PWARegister'
+import { auth } from '@/auth'
 
 const anton = Anton({
   weight: '400',
@@ -32,10 +33,12 @@ export const viewport = {
   viewportFit: 'cover',
 }
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const session = await auth()
+  const uid = session?.user?.id ?? ''
   return (
     <html lang="en" className={`${anton.variable} ${spaceMono.variable}`}>
-      <body className="bg-paper text-ink font-sans antialiased">
+      <body className="bg-paper text-ink font-sans antialiased" data-uid={uid}>
         <PWARegister />
         <SessionProvider>{children}</SessionProvider>
       </body>
