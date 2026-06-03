@@ -1,7 +1,8 @@
+import Link from 'next/link'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
-import { Frame, RedButton, MonoLabel } from '@/components/ui/primitives'
+import { Frame, MonoLabel } from '@/components/ui/primitives'
 
 export default async function AddFriendPage({ params }) {
   const { code } = await params
@@ -59,9 +60,12 @@ export default async function AddFriendPage({ params }) {
               {existing.status === 'ACCEPTED' ? 'Already friends.' : 'Friend request already pending.'}
             </p>
           ) : (
-            <form action={`/api/friends/add/${code}`}>
-              <RedButton type="submit">Send Friend Request →</RedButton>
-            </form>
+            <Link
+              href={`/api/friends/add/${code}`}
+              className="block w-full bg-red text-paper font-display uppercase tracking-[0.06em] text-lg sm:text-xl px-4 py-4 text-center"
+            >
+              Send Friend Request →
+            </Link>
           )}
         </div>
       </Frame>

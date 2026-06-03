@@ -35,13 +35,13 @@ const TARGET_CATEGORIES = [
       { label: 'Taylor Swift' },
       { label: 'Minecraft' },
       { label: 'Black hole' },
+      { label: '9/11 attacks' },
     ],
   },
   {
     label: 'Controversial',
     targets: [
       { label: 'The Holocaust' },
-      { label: '9/11 attacks' },
       { label: 'Osama bin Laden' },
       { label: 'Jeffrey Epstein' },
     ],
@@ -67,7 +67,7 @@ const DIFFICULTIES = [
 ]
 
 const TARGET_LOCKED_MODES = new Set(['jesus', 'daily'])
-const DIFF_HIDDEN_MODES = new Set(['fact-checker'])
+const DIFF_HIDDEN_MODES = new Set(['fact-checker', 'nohub'])
 
 export default function HomePage() {
   const router = useRouter()
@@ -243,8 +243,14 @@ export default function HomePage() {
           </div>
 
           {/* TARGET */}
-          <div className={`px-5 py-4 border-b-4 border-ink ${targetLocked ? 'opacity-40 pointer-events-none' : ''}`}>
+          <div className="px-5 py-4 border-b-4 border-ink">
             <MonoLabel className="block mb-3">Target</MonoLabel>
+            {targetLocked && (
+              <p className="mb-3 font-mono text-[11px] uppercase tracking-widest text-red">
+                {mode === 'jesus' ? 'Target fixed: Jesus' : 'Target set by daily seed'}
+              </p>
+            )}
+          <div className={targetLocked ? 'opacity-40 pointer-events-none' : ''}>
             {TARGET_CATEGORIES.map(cat => (
               <div key={cat.label} className="mb-4 last:mb-0">
                 <MonoLabel className="text-red block mb-2">▸ {cat.label}</MonoLabel>
@@ -305,11 +311,7 @@ export default function HomePage() {
               )}
             </div>
 
-            {targetLocked && (
-              <p className="mt-2 font-mono text-[11px] uppercase tracking-widest text-red">
-                {mode === 'jesus' ? 'Target fixed: Jesus' : 'Target set by daily seed'}
-              </p>
-            )}
+          </div>
           </div>
 
           {/* MODE */}
