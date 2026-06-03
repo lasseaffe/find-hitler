@@ -166,16 +166,82 @@ def build_graph(paths, work_db):
     return conn
 
 
+def build_graph_lowmem(paths, work_db):
+    """Same output as build_graph (pages/redirects/edges) but resolves the title,
+    redirect, and linktarget maps via on-disk sqlite JOINs instead of in-memory
+    dicts. Slower + disk-heavy, but completes at <1 GB free RAM."""
+    if os.path.exists(work_db):
+        os.remove(work_db)
+    conn = sqlite3.connect(work_db)
+    conn.execute("PRAGMA journal_mode=OFF")
+    conn.execute("PRAGMA synchronous=OFF")
+    conn.execute("CREATE TABLE pages (id INTEGER PRIMARY KEY, title TEXT, is_redirect INTEGER)")
+    conn.execute("CREATE TABLE redirects (source_id INTEGER, target_id INTEGER)")
+    conn.execute("CREATE TABLE edges (src INTEGER, dst INTEGER)")
+    conn.execute("CREATE TABLE redir_raw (rd_from INTEGER, rd_title TEXT)")
+    conn.execute("CREATE TABLE lt_raw (lt_id INTEGER, lt_title TEXT)")
+    conn.execute("CREATE TABLE pl_raw (pl_from INTEGER, lt_id INTEGER)")
+
+    def stream_insert(sql, rows, batch=50000):
+        buf = []
+        for row in rows:
+            buf.append(row)
+            if len(buf) >= batch:
+                conn.executemany(sql, buf)
+                buf.clear()
+        if buf:
+            conn.executemany(sql, buf)
+
+    # pages (ns0)
+    stream_insert(
+        "INSERT OR IGNORE INTO pages VALUES (?,?,?)",
+        ((int(t[0]), t[2], int(t[3])) for t in iter_table_rows(paths["page"], "page") if t[1] == "0"))
+    conn.execute("CREATE INDEX pages_title ON pages(title)")
+
+    # redirects (ns0): resolve rd_title -> page id via JOIN
+    stream_insert(
+        "INSERT INTO redir_raw VALUES (?,?)",
+        ((int(t[0]), t[2]) for t in iter_table_rows(paths["redirect"], "redirect") if t[1] == "0"))
+    conn.execute("INSERT INTO redirects(source_id, target_id) "
+                 "SELECT rr.rd_from, p.id FROM redir_raw rr JOIN pages p ON p.title = rr.rd_title")
+    conn.execute("CREATE INDEX redirects_src ON redirects(source_id)")
+
+    # linktarget (ns0) -> lt(lt_id, dst_id), dst redirect-collapsed
+    stream_insert(
+        "INSERT INTO lt_raw VALUES (?,?)",
+        ((int(t[0]), t[2]) for t in iter_table_rows(paths["linktarget"], "linktarget") if t[1] == "0"))
+    conn.execute("CREATE TABLE lt (lt_id INTEGER PRIMARY KEY, dst_id INTEGER)")
+    conn.execute("INSERT OR IGNORE INTO lt(lt_id, dst_id) "
+                 "SELECT l.lt_id, COALESCE(r.target_id, p.id) "
+                 "FROM lt_raw l JOIN pages p ON p.title = l.lt_title "
+                 "LEFT JOIN redirects r ON r.source_id = p.id")
+
+    # pagelinks (ns0 from) -> edges
+    stream_insert(
+        "INSERT INTO pl_raw VALUES (?,?)",
+        ((int(t[0]), int(t[2])) for t in iter_table_rows(paths["pagelinks"], "pagelinks") if t[1] == "0"))
+    conn.execute("INSERT INTO edges(src, dst) "
+                 "SELECT COALESCE(r.target_id, pl.pl_from), lt.dst_id "
+                 "FROM pl_raw pl JOIN lt ON lt.lt_id = pl.lt_id "
+                 "LEFT JOIN redirects r ON r.source_id = pl.pl_from "
+                 "WHERE COALESCE(r.target_id, pl.pl_from) <> lt.dst_id")
+
+    conn.execute("CREATE INDEX ix_edges_dst ON edges(dst)")
+    for tmp in ("redir_raw", "lt_raw", "pl_raw", "lt"):
+        conn.execute(f"DROP TABLE {tmp}")
+    conn.commit()
+    return conn
+
+
 def _write_gz(path, lines):
     with gzip.open(path, "wt", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
 
 
-def _selftest_build():
-    import tempfile
-    d = tempfile.mkdtemp(prefix="sixdeg-dumps-")
+def _make_synthetic_dumps(d):
+    """Write the 4 tiny gz dump fixtures into dir d; return the paths dict.
+    Graph: A(4)->B(2)->Hitler(1), C(3)->Redir(6 -> Hitler), D(5) isolated; ns1 Talk(7) filtered."""
     paths = {k: os.path.join(d, f"{k}.sql.gz") for k in ("page", "redirect", "linktarget", "pagelinks")}
-    # ns0: Hitler(1), B(2), C(3), A(4), D(5), Redir(6,is_redirect); plus ns1 Talk(7) to be filtered
     _write_gz(paths["page"], [
         "INSERT INTO `page` VALUES (1,0,'Adolf_Hitler',0),(2,0,'B',0),(3,0,'C',0),(4,0,'A',0),(5,0,'D',0),(6,0,'Redir',1),(7,1,'Talk',0);",
     ])
@@ -186,14 +252,31 @@ def _selftest_build():
         "INSERT INTO `linktarget` VALUES (10,0,'B'),(11,0,'Adolf_Hitler'),(12,0,'Redir'),(13,1,'Talk');",
     ])
     _write_gz(paths["pagelinks"], [
-        # A->B(10), B->Hitler(11), C->Redir(12 collapses to Hitler), ns1-from filtered, D->Talk(ns1) dropped
         "INSERT INTO `pagelinks` VALUES (4,0,10),(2,0,11),(3,0,12),(7,1,11),(5,0,13);",
     ])
+    return paths
+
+
+def _selftest_build():
+    import tempfile
+    d = tempfile.mkdtemp(prefix="sixdeg-dumps-")
+    paths = _make_synthetic_dumps(d)
     conn = build_graph(paths, os.path.join(d, "graph.sqlite"))
     assert resolve_target_id(conn, "Adolf_Hitler") == 1
     dist = reverse_bfs_edges(conn, 1)
-    assert dist == {1: 0, 2: 1, 3: 1, 4: 2}, dist  # C reaches via redirect collapse; D unreachable; ns1 filtered
+    assert dist == {1: 0, 2: 1, 3: 1, 4: 2}, dist
     print("  build (iter_table_rows + build_graph) OK")
+
+
+def _selftest_build_lowmem():
+    import tempfile
+    d = tempfile.mkdtemp(prefix="sixdeg-lowmem-")
+    paths = _make_synthetic_dumps(d)
+    conn = build_graph_lowmem(paths, os.path.join(d, "graph.sqlite"))
+    assert resolve_target_id(conn, "Adolf_Hitler") == 1
+    dist = reverse_bfs_edges(conn, 1)
+    assert dist == {1: 0, 2: 1, 3: 1, 4: 2}, dist  # identical graph to the fast path
+    print("  build_lowmem (build_graph_lowmem) OK")
 
 
 def _selftest_bfs_edges():
@@ -235,6 +318,7 @@ def main(argv=None):
         _selftest_scanner()
         _selftest_bfs_edges()
         _selftest_build()
+        _selftest_build_lowmem()
         print("ALL SELFTESTS PASSED")
         return 0
 
