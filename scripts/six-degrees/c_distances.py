@@ -171,10 +171,59 @@ def _selftest_pure():
     print("  pure (build_distribution + render_markdown) OK")
 
 
-if __name__ == "__main__":
-    if "--selftest" in sys.argv:
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="Six Degrees full-graph distance report")
+    ap.add_argument("--db", help="path to the uncompressed sdow.sqlite")
+    ap.add_argument("--target", default="Adolf Hitler")
+    ap.add_argument("--out-dir", default="docs/six-degrees")
+    ap.add_argument("--dump-date", default=date.today().isoformat())
+    ap.add_argument("--top", type=int, default=100)
+    ap.add_argument("--selftest", action="store_true")
+    args = ap.parse_args(argv)
+
+    if args.selftest:
         _selftest_pure()
         _selftest_sqlite()
         print("ALL SELFTESTS PASSED")
-        sys.exit(0)
-    raise SystemExit("Not yet runnable; use --selftest (full main added in a later task).")
+        return 0
+
+    if not args.db:
+        raise SystemExit("--db <path to sdow.sqlite> is required (or use --selftest)")
+
+    title = args.target.replace(" ", "_")
+    conn = sqlite3.connect(f"file:{args.db}?mode=ro", uri=True)
+    target_id = resolve_target_id(conn, title)
+    total = conn.execute(
+        "SELECT COUNT(*) FROM pages WHERE is_redirect = 0").fetchone()[0]
+
+    print(f"Target '{args.target}' -> id {target_id}; {total:,} articles. Running reverse BFS...")
+    dist = reverse_bfs(conn, target_id)
+    print(f"Labeled {len(dist):,} reachable nodes. Aggregating...")
+
+    report = build_distribution(dist, total_articles=total, within=6, top=args.top, titles=None)
+
+    # Fill titles for the small farthest list only (avoid loading all titles).
+    far_ids = [f["id"] for f in report["farthest"]]
+    if far_ids:
+        qmarks = ",".join(["?"] * len(far_ids))
+        idmap = {r[0]: r[1] for r in conn.execute(
+            f"SELECT id, title FROM pages WHERE id IN ({qmarks})", far_ids)}
+        report["farthest"] = [
+            {"title": idmap.get(f["id"], str(f["id"])).replace("_", " "), "dist": f["dist"]}
+            for f in report["farthest"]
+        ]
+
+    meta = {"target": args.target, "dumpDate": args.dump_date, "targetId": target_id}
+    os.makedirs(args.out_dir, exist_ok=True)
+    base = os.path.join(args.out_dir, f"fullgraph-{args.dump_date}")
+    with open(base + ".json", "w", encoding="utf-8") as f:
+        json.dump({**meta, **report}, f, indent=2)
+    with open(base + ".md", "w", encoding="utf-8") as f:
+        f.write(render_markdown(report, meta))
+    print(f"Report: {base}.md  ({report['pctWithinSix']}% of {report['reachable']:,} "
+          f"reachable within 6; max {report['max']})")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
