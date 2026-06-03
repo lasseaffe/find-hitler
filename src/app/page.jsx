@@ -1,76 +1,166 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { hasPlayedDailyToday } from '@/lib/dailyChallenge'
-import { Frame, Rule, MonoLabel, SelectCell, ToggleRow, RedButton } from '@/components/ui/primitives'
+import { Frame, MonoLabel, RedButton, SelectCell } from '@/components/ui/primitives'
 import HitlerMark from '@/components/ui/HitlerMark'
 import CrowdIntro from '@/components/intro/CrowdIntro'
 import { primeAudio } from '@/lib/sfx'
 
-const TARGETS = [
-  { label: 'Adolf Hitler', category: 'Historical', featured: true },
-  { label: 'Jesus', category: 'Religion' },
-  { label: 'Joseph Stalin', category: 'Historical' },
-  { label: 'Taylor Swift', category: 'Pop Culture' },
-  { label: 'Minecraft', category: 'Internet' },
-  { label: 'Black hole', category: 'Science' },
-  { label: '9/11 attacks', category: 'Controversial' },
-  { label: 'Holocaust', category: 'Controversial' },
+// ─── Target data ────────────────────────────────────────────────
+const TARGET_CATEGORIES = [
+  {
+    label: 'Political Figures',
+    targets: [
+      { label: 'Adolf Hitler', featured: true },
+      { label: 'Joseph Stalin' },
+      { label: 'Mao Zedong' },
+      { label: 'Winston Churchill' },
+      { label: 'Napoleon Bonaparte' },
+      { label: 'Donald Trump' },
+    ],
+  },
+  {
+    label: 'Religion',
+    targets: [
+      { label: 'Jesus' },
+      { label: 'Muhammad' },
+      { label: 'Pope Francis' },
+      { label: 'Gautama Buddha' },
+    ],
+  },
+  {
+    label: 'Pop Culture',
+    targets: [
+      { label: 'Taylor Swift' },
+      { label: 'Minecraft' },
+      { label: 'Black hole' },
+    ],
+  },
+  {
+    label: 'Controversial',
+    targets: [
+      { label: 'The Holocaust' },
+      { label: '9/11 attacks' },
+      { label: 'Osama bin Laden' },
+      { label: 'Jeffrey Epstein' },
+    ],
+  },
 ]
 
-const MODES = [
-  { value: 'classic',  label: 'Classic',          desc: 'FEWEST CLICKS · RANDOM START', shortDesc: 'RANDOM START' },
-  { value: 'speedrun', label: 'Speedrun',          desc: 'FASTEST TIME · CURATED START', shortDesc: 'FASTEST TIME' },
-  { value: 'golf',     label: 'Golf',              desc: '5-MIN CAP · LOWEST CLICKS',    shortDesc: '5-MIN CAP' },
-  { value: 'jesus',    label: '5-Clicks',          desc: 'PAR · 5 ROUNDS · TARGET = JESUS', shortDesc: 'TO JESUS' },
-  { value: 'daily',    label: 'Daily',             desc: 'ONE ATTEMPT · SAME FOR ALL',   shortDesc: 'ONE SHOT' },
-  { value: 'nohub',    label: 'No-Hub',            desc: 'HUBS BOUNCE YOU · COST AN UNDO', shortDesc: 'HUB PENALTY' },
-  { value: 'fact-checker', label: 'Fact Checker', desc: 'A Wikipedia article has been tampered with. Find the planted inaccuracies using only your knowledge.', shortDesc: 'SPOT THE LIE' },
+// ─── Mode data ───────────────────────────────────────────────────
+const VARIANTS = [
+  { value: 'speedrun',      label: 'Speedrun',   sub: 'Fastest Time',  desc: 'Curated start, race the clock.' },
+  { value: 'golf',          label: 'Golf',        sub: '5-Min Cap',     desc: 'Lowest clicks inside 5 minutes.' },
+  { value: 'jesus',         label: '5-Clicks',    sub: 'To Jesus',      desc: '5 rounds, target locked to Jesus.' },
+  { value: 'daily',         label: 'Daily',       sub: 'One Shot',      desc: 'Same seed for everyone.' },
+  { value: 'nohub',         label: 'No-Hub',      sub: 'Hub Penalty',   desc: 'Hub pages cost an undo.' },
+  { value: 'fact-checker',  label: 'Fact Check',  sub: 'Spot the Lie',  desc: 'Find planted inaccuracies.' },
 ]
+
+// ─── Difficulty data ─────────────────────────────────────────────
+const DIFFICULTIES = [
+  { value: 'easy',   label: 'Easy',   hops: '~2 hops',  meta: '5 undos · no timer' },
+  { value: 'normal', label: 'Normal', hops: '3–4 hops', meta: '3 undos · no timer' },
+  { value: 'hard',   label: 'Hard',   hops: '5–6 hops', meta: '1 undo · 5-min cap' },
+  { value: 'brutal', label: 'Brutal', hops: '6+ hops',  meta: '0 undos · hub penalty' },
+]
+
+const TARGET_LOCKED_MODES = new Set(['jesus', 'daily'])
+const DIFF_HIDDEN_MODES = new Set(['fact-checker'])
 
 export default function HomePage() {
   const router = useRouter()
-  const [playType, setPlayType] = useState('solo')
-  const [target, setTarget] = useState('Adolf Hitler')
-  const [mode, setMode] = useState('classic')
-  const [hardcore, setHardcore] = useState(false)
-  const [playerName, setPlayerName] = useState('')
-  const [botCount, setBotCount] = useState(1)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [showIntro, setShowIntro] = useState(false)
+  const [playType, setPlayType]           = useState('solo')
+  const [target, setTarget]               = useState('Adolf Hitler')
+  const [customTarget, setCustomTarget]   = useState('')
+  const [customStatus, setCustomStatus]   = useState(null) // null | 'checking' | 'valid' | 'invalid'
+  const [customCanonical, setCustomCanonical] = useState('')
+  const [isCustom, setIsCustom]           = useState(false)
+  const [mode, setMode]                   = useState('classic')
+  const [difficulty, setDifficulty]       = useState('normal')
+  const [playerName, setPlayerName]       = useState('')
+  const [botCount, setBotCount]           = useState(1)
+  const [loading, setLoading]             = useState(false)
+  const [error, setError]                 = useState('')
+  const [showIntro, setShowIntro]         = useState(false)
+  const [friends, setFriends]             = useState([])
   const startReq = useRef(null)
+  const validateTimer = useRef(null)
 
-  const targetLocked = mode === 'jesus' || mode === 'daily'
+  const targetLocked = TARGET_LOCKED_MODES.has(mode)
+  const diffHidden   = DIFF_HIDDEN_MODES.has(mode)
   const alreadyPlayedDaily = mode === 'daily' && hasPlayedDailyToday()
+  const effectiveTarget = isCustom ? customCanonical : target
+  const canStart = !!playerName.trim() && (!isCustom || customStatus === 'valid') && !alreadyPlayedDaily
+
+  useEffect(() => {
+    if (playType !== 'multi') return
+    fetch('/api/friends')
+      .then(r => r.json())
+      .then(d => setFriends(d.friends || []))
+      .catch(() => {})
+  }, [playType])
+
+  const handleCustomInput = useCallback((val) => {
+    setCustomTarget(val)
+    setCustomStatus('checking')
+    setCustomCanonical('')
+    clearTimeout(validateTimer.current)
+    if (!val.trim()) { setCustomStatus(null); return }
+    validateTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/wikipedia/validate?title=${encodeURIComponent(val)}`)
+        const data = await res.json()
+        if (data.valid) {
+          setCustomStatus('valid')
+          setCustomCanonical(data.canonicalTitle)
+        } else {
+          setCustomStatus('invalid')
+        }
+      } catch {
+        setCustomStatus('invalid')
+      }
+    }, 400)
+  }, [])
+
+  const handleInviteFriend = async (friendId) => {
+    const lobbyCode = sessionStorage.getItem('roomCode') || ''
+    if (!lobbyCode) return
+    await fetch('/api/lobby/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toUserId: friendId, lobbyCode, target: effectiveTarget, mode }),
+    })
+  }
 
   const handleStart = () => {
     if (!playerName.trim()) { setError('Enter a codename to continue'); return }
+    if (isCustom && customStatus !== 'valid') { setError('Choose a valid Wikipedia target'); return }
     setError('')
 
     if (mode === 'fact-checker') {
-      const params = new URLSearchParams({ difficulty: hardcore ? 'hard' : 'medium' })
+      const params = new URLSearchParams({ difficulty: difficulty === 'easy' || difficulty === 'normal' ? 'medium' : 'hard' })
       router.push(`/play/fact-checker?${params}`)
       return
     }
 
     if (playType === 'solo') {
-      primeAudio() // unlock audio inside the click gesture
+      primeAudio()
       setLoading(true)
-      // kick off the page fetch concurrently; the intro covers the latency
       startReq.current = (async () => {
         const res = await fetch('/api/game/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target, mode, playerName: playerName.trim(), hardcore }),
+          body: JSON.stringify({ target: effectiveTarget, mode, playerName: playerName.trim(), difficulty }),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Server error')
-        return { ...data, target: data.target || target, mode, hardcore, playerName: playerName.trim() }
+        return { ...data, target: data.target || effectiveTarget, mode, difficulty, playerName: playerName.trim() }
       })()
       setShowIntro(true)
     } else {
-      sessionStorage.setItem('lobbyConfig', JSON.stringify({ playerName: playerName.trim(), mode, target, botCount, hardcore }))
+      sessionStorage.setItem('lobbyConfig', JSON.stringify({ playerName: playerName.trim(), mode, target: effectiveTarget, botCount, difficulty }))
       router.push('/lobby/new')
     }
   }
@@ -87,23 +177,44 @@ export default function HomePage() {
     }
   }
 
+  const targetLabel = isCustom ? (customCanonical || customTarget || '?') : target
+  const modeLabel   = mode === 'classic' ? 'FIND TARGET' : (VARIANTS.find(v => v.value === mode)?.label || mode).toUpperCase()
+
   if (showIntro) return <CrowdIntro onDone={handleIntroDone} />
 
   return (
     <div className="min-h-screen bg-paper px-4 py-8 sm:py-12">
       <main className="mx-auto max-w-2xl">
         <Frame>
+
           {/* MASTHEAD */}
           <div className="flex items-center gap-4 px-5 py-5 border-b-4 border-ink">
             <HitlerMark size={56} className="flex-none" />
             <div className="flex-1">
-              <h1 className="text-[clamp(2rem,9vw,2.75rem)] leading-[0.82]">Find Hitler</h1>
+              <h1 className="text-[clamp(2rem,9vw,2.75rem)] leading-[0.82]">Six Clicks</h1>
               <MonoLabel className="mt-1.5 block">Wikirace · Taboo Edition</MonoLabel>
             </div>
             <div className="hidden sm:flex flex-col items-end gap-2">
-              <a href="/ranked" className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/70 hover:text-red">⚔ Ranked</a>
-              <a href="/leaderboard" className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/70 hover:text-red">Leaderboard →</a>
+              <a href="/ranked"      className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/70 hover:text-red">⚔ Ranked</a>
+              <a href="/leaderboard" className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/70 hover:text-red">Leaderboard →</a>
             </div>
+          </div>
+
+          {/* STICKY SUMMARY BAR */}
+          <div className="sticky top-0 z-10 bg-red text-paper border-b-4 border-ink px-5 py-3 flex items-center justify-between gap-4">
+            <div>
+              <MonoLabel className="text-paper/70 block mb-0.5">Your Race</MonoLabel>
+              <p className="font-mono text-[13px] tracking-[0.1em] leading-none">
+                → {targetLabel.toUpperCase().slice(0, 14)} · {modeLabel} · {difficulty.toUpperCase()}
+              </p>
+            </div>
+            <button
+              onClick={handleStart}
+              disabled={loading || !canStart}
+              className="bg-paper text-red font-display uppercase text-[18px] tracking-[0.06em] px-5 py-2 disabled:opacity-40"
+            >
+              {loading ? '…' : playType === 'solo' ? 'Start →' : 'Lobby →'}
+            </button>
           </div>
 
           {/* SOLO / MULTIPLAYER */}
@@ -112,7 +223,7 @@ export default function HomePage() {
               <button
                 key={val}
                 onClick={() => setPlayType(val)}
-                className={`min-h-[48px] py-3.5 text-center font-display uppercase tracking-[0.06em] text-base cursor-pointer ${i === 1 ? 'border-l-4 border-ink' : ''} ${playType === val ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-paper-dim'}`}
+                className={`min-h-[52px] py-4 text-center font-display uppercase tracking-[0.06em] text-xl cursor-pointer ${i === 1 ? 'border-l-4 border-ink' : ''} ${playType === val ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-paper-dim'}`}
               >
                 {lbl}
               </button>
@@ -127,105 +238,200 @@ export default function HomePage() {
               onChange={e => setPlayerName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleStart()}
               placeholder="enter codename"
-              className="w-full border-[3px] border-ink bg-paper px-3 py-2.5 font-mono text-sm text-ink placeholder:text-ink/40 outline-none focus:bg-paper-dim caret-red"
+              className="w-full border-[3px] border-ink bg-paper px-3 py-3 font-mono text-base text-ink placeholder:text-ink/40 outline-none focus:bg-paper-dim caret-red"
             />
           </div>
 
           {/* TARGET */}
-          <div className="px-5 py-4 border-b-4 border-ink">
-            <MonoLabel className="block mb-2.5">Target</MonoLabel>
-            <div className={`grid grid-cols-2 sm:grid-cols-3 gap-[3px] bg-ink border-[3px] border-ink ${targetLocked ? 'opacity-40 pointer-events-none' : ''}`}>
-              {TARGETS.map(t => {
-                const sel = target === t.label
-                return (
-                  <SelectCell key={t.label} selected={sel} onClick={() => setTarget(t.label)} className="flex flex-col justify-center">
-                    {t.featured && <HitlerMark size={26} fill={sel ? 'var(--color-paper)' : 'var(--color-ink)'} className="mb-1" />}
-                    <span className="font-display uppercase text-[13px] leading-none">{t.label}</span>
-                    <MonoLabel className={`mt-1 block ${sel ? 'text-paper/70' : ''}`}>{t.category}</MonoLabel>
-                  </SelectCell>
-                )
-              })}
-              {/* filler so the 3-col grid's empty slot isn't an ink block (hidden at 2-col) */}
-              <div className="hidden sm:block bg-paper" aria-hidden />
+          <div className={`px-5 py-4 border-b-4 border-ink ${targetLocked ? 'opacity-40 pointer-events-none' : ''}`}>
+            <MonoLabel className="block mb-3">Target</MonoLabel>
+            {TARGET_CATEGORIES.map(cat => (
+              <div key={cat.label} className="mb-4 last:mb-0">
+                <MonoLabel className="text-red block mb-2">▸ {cat.label}</MonoLabel>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {cat.targets.map(t => {
+                    const sel = !isCustom && target === t.label
+                    return (
+                      <SelectCell
+                        key={t.label}
+                        selected={sel}
+                        onClick={() => { setTarget(t.label); setIsCustom(false) }}
+                        className="flex-none min-w-[110px] flex flex-col justify-center py-3 px-3"
+                      >
+                        {t.featured && (
+                          <HitlerMark
+                            size={36}
+                            fill={sel ? 'var(--color-paper)' : 'var(--color-ink)'}
+                            className="mb-1.5"
+                          />
+                        )}
+                        <span className="font-display uppercase text-base leading-none">{t.label}</span>
+                      </SelectCell>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Custom target */}
+            <div className="mt-2">
+              <MonoLabel className="text-red block mb-2">▸ Custom</MonoLabel>
+              <SelectCell
+                selected={isCustom}
+                onClick={() => setIsCustom(true)}
+                className="inline-flex items-center gap-2 px-3 py-3 border-[3px] border-dashed border-ink"
+              >
+                <span className="font-display uppercase text-base">+ Own Target</span>
+              </SelectCell>
+              {isCustom && (
+                <div className="mt-2">
+                  <input
+                    autoFocus
+                    value={customTarget}
+                    onChange={e => handleCustomInput(e.target.value)}
+                    placeholder="search Wikipedia page title…"
+                    className="w-full border-[3px] border-ink bg-paper px-3 py-3 font-mono text-base text-ink placeholder:text-ink/40 outline-none focus:bg-paper-dim caret-red"
+                  />
+                  {customStatus === 'checking' && (
+                    <MonoLabel className="mt-1 block text-ink/60">Checking…</MonoLabel>
+                  )}
+                  {customStatus === 'valid' && (
+                    <MonoLabel className="mt-1 block" style={{ color: 'green' }}>✓ Valid — {customCanonical}</MonoLabel>
+                  )}
+                  {customStatus === 'invalid' && (
+                    <MonoLabel className="mt-1 block text-red">✗ Not found on Wikipedia</MonoLabel>
+                  )}
+                </div>
+              )}
             </div>
+
             {targetLocked && (
-              <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-red">
+              <p className="mt-2 font-mono text-[11px] uppercase tracking-widest text-red">
                 {mode === 'jesus' ? 'Target fixed: Jesus' : 'Target set by daily seed'}
               </p>
             )}
           </div>
 
-          {/* GAME MODE */}
+          {/* MODE */}
           <div className="px-5 py-4 border-b-4 border-ink">
-            <MonoLabel className="block mb-2.5">Game Mode</MonoLabel>
+            <MonoLabel className="block mb-3">Mode</MonoLabel>
 
-            {/* Hero: Classic */}
             <SelectCell
               selected={mode === 'classic'}
               onClick={() => setMode('classic')}
-              className="w-full flex items-center gap-4 px-4 py-5 mb-[3px] border-[3px] border-ink"
+              className="w-full flex items-center gap-4 px-4 py-5 mb-2 border-[3px] border-ink"
             >
               <HitlerMark size={52} fill={mode === 'classic' ? 'var(--color-paper)' : 'var(--color-ink)'} className="flex-none" />
               <div className="flex-1 text-left">
-                <div className="font-display uppercase text-[22px] leading-none">Classic · Find Hitler</div>
-                <div className={`mt-1.5 font-mono text-[11px] ${mode === 'classic' ? 'text-paper/70' : 'text-ink/60'}`}>
-                  Navigate Wikipedia from a random page to Adolf Hitler. Fewest clicks wins.
+                <div className="font-display uppercase text-2xl leading-none">Find Target</div>
+                <div className={`mt-1.5 font-mono text-[13px] ${mode === 'classic' ? 'text-paper/70' : 'text-ink/60'}`}>
+                  Navigate from a random Wikipedia page to your chosen target. Fewest clicks wins.
                 </div>
               </div>
               {mode === 'classic' && (
-                <span className="flex-none font-mono text-[8px] uppercase tracking-[0.12em] bg-paper text-red border border-red px-2 py-1">★ Main mode</span>
+                <span className="flex-none font-mono text-[9px] uppercase tracking-[0.12em] bg-paper text-red border border-red px-2 py-1">★ Main</span>
               )}
             </SelectCell>
 
-            {/* Variants row */}
-            <MonoLabel className="block mt-3 mb-1.5">Variants</MonoLabel>
-            <div className="grid grid-cols-5 gap-[3px] bg-ink border-[3px] border-ink">
-              {MODES.filter(m => m.value !== 'classic').map(m => {
-                const sel = mode === m.value
+            <MonoLabel className="block mt-4 mb-2">Variants</MonoLabel>
+            <div className="flex gap-2 overflow-x-auto pb-1 border-[3px] border-ink bg-ink">
+              {VARIANTS.map(v => {
+                const sel = mode === v.value
                 return (
-                  <SelectCell key={m.value} selected={sel} onClick={() => setMode(m.value)} className="flex flex-col items-center justify-center text-center py-3 px-1">
-                    <span className="font-display uppercase text-[9px] leading-tight">{m.label}</span>
-                    <MonoLabel className={`mt-1 block text-[7px] ${sel ? 'text-paper/70' : ''}`}>{m.shortDesc}</MonoLabel>
+                  <SelectCell
+                    key={v.value}
+                    selected={sel}
+                    onClick={() => setMode(v.value)}
+                    className="flex-none min-w-[130px] flex flex-col py-4 px-3 border-0"
+                  >
+                    <span className="font-display uppercase text-lg leading-none">{v.label}</span>
+                    <MonoLabel className={`mt-1.5 block ${sel ? 'text-paper/70' : ''}`}>{v.sub}</MonoLabel>
+                    <p className={`mt-2 font-mono text-[11px] leading-tight ${sel ? 'text-paper/60' : 'text-ink/50'}`}>{v.desc}</p>
                   </SelectCell>
                 )
               })}
             </div>
           </div>
 
-          {/* HARDCORE */}
-          <div className="border-b-4 border-ink">
-            <ToggleRow
-              label="Hardcore Modifier"
-              sublabel="0 undos · time caps halved · max pain"
-              checked={hardcore}
-              onChange={setHardcore}
-            />
-          </div>
+          {/* DIFFICULTY */}
+          {!diffHidden && (
+            <div className="px-5 py-4 border-b-4 border-ink">
+              <MonoLabel className="block mb-3">Difficulty</MonoLabel>
+              <div className="grid grid-cols-4 gap-[3px] bg-ink border-[3px] border-ink">
+                {DIFFICULTIES.map(d => {
+                  const sel = difficulty === d.value
+                  return (
+                    <SelectCell
+                      key={d.value}
+                      selected={sel}
+                      onClick={() => setDifficulty(d.value)}
+                      className="flex flex-col items-center text-center py-4 px-2"
+                    >
+                      <span className="font-display uppercase text-lg leading-none">{d.label}</span>
+                      <MonoLabel className={`mt-1.5 block ${sel ? 'text-paper/70' : ''}`}>{d.hops}</MonoLabel>
+                      <p className={`mt-1 font-mono text-[10px] leading-tight ${sel ? 'text-paper/60' : 'text-ink/40'}`}>{d.meta}</p>
+                    </SelectCell>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
-          {/* BOTS (multi only) */}
+          {/* MULTIPLAYER SECTION */}
           {playType === 'multi' && (
             <div className="px-5 py-4 border-b-4 border-ink">
-              <MonoLabel className="block mb-2">Bot Opponents: {botCount}</MonoLabel>
-              <input
-                type="range" min={0} max={3} value={botCount}
-                onChange={e => setBotCount(Number(e.target.value))}
-                className="w-full accent-red"
-              />
-              <div className="mt-1 flex justify-between font-mono text-[9px] text-ink/50"><span>0 BOTS</span><span>3 BOTS</span></div>
+              <MonoLabel className="block mb-3">Friends</MonoLabel>
+              {friends.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {friends.map(f => (
+                    <div key={f.id} className="border-[3px] border-ink px-4 py-3 flex items-center gap-3">
+                      <div className={`w-2.5 h-2.5 rounded-full flex-none ${f.online ? 'bg-green-500' : 'bg-ink/20'}`} />
+                      <div className="flex-1">
+                        <p className="font-display uppercase text-base leading-none">{f.name}</p>
+                        <MonoLabel className="mt-0.5 block">ELO {f.elo}</MonoLabel>
+                      </div>
+                      <button
+                        onClick={() => handleInviteFriend(f.id)}
+                        className="bg-red text-paper font-display uppercase text-sm px-4 py-2 tracking-[0.06em]"
+                      >
+                        Invite
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="font-mono text-[11px] text-ink/50">No friends yet — share your friend code from your profile.</p>
+              )}
+
+              <div className="mt-3 border-[3px] border-dashed border-ink px-4 py-3">
+                <MonoLabel className="block mb-1">🔗 Invite Link</MonoLabel>
+                <p className="font-mono text-[11px] text-red break-all">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/join/…` : 'Create lobby to get link'}
+                </p>
+              </div>
+
+              <div className="mt-4">
+                <MonoLabel className="block mb-2">Bot Opponents: {botCount}</MonoLabel>
+                <input
+                  type="range" min={0} max={3} value={botCount}
+                  onChange={e => setBotCount(Number(e.target.value))}
+                  className="w-full accent-red"
+                />
+                <div className="mt-1 flex justify-between font-mono text-[10px] text-ink/50"><span>0 Bots</span><span>3 Bots</span></div>
+              </div>
             </div>
           )}
 
           {error && <p className="px-5 py-3 font-mono text-xs text-red border-b-4 border-ink">{error}</p>}
 
-          <RedButton onClick={handleStart} disabled={loading || alreadyPlayedDaily}>
+          <RedButton onClick={handleStart} disabled={loading || alreadyPlayedDaily || !canStart}>
             {loading ? 'Connecting…' : alreadyPlayedDaily ? 'Already played today ✓' : playType === 'solo' ? 'Start Race →' : 'Create Lobby →'}
           </RedButton>
         </Frame>
 
-        {/* mobile nav (masthead links are desktop-only) */}
         <div className="sm:hidden mt-3 grid grid-cols-2 gap-3">
-          <a href="/ranked" className="border-[3px] border-ink py-2.5 text-center font-mono text-[10px] uppercase tracking-[0.18em]">⚔ Ranked</a>
-          <a href="/leaderboard" className="border-[3px] border-ink py-2.5 text-center font-mono text-[10px] uppercase tracking-[0.18em]">Leaderboard →</a>
+          <a href="/ranked"      className="border-[3px] border-ink py-3 text-center font-mono text-[11px] uppercase tracking-[0.18em]">⚔ Ranked</a>
+          <a href="/leaderboard" className="border-[3px] border-ink py-3 text-center font-mono text-[11px] uppercase tracking-[0.18em]">Leaderboard →</a>
         </div>
       </main>
     </div>
