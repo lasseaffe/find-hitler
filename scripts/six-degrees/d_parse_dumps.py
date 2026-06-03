@@ -1,0 +1,387 @@
+#!/usr/bin/env python3
+"""Six Degrees — build the current enwiki ns0 link graph from Wikimedia SQL dumps,
+reverse-BFS from a target, and report the full-population distance distribution.
+Self-tests: python scripts/six-degrees/d_parse_dumps.py --selftest
+"""
+import sys
+import os
+import gzip
+import sqlite3
+import argparse
+from datetime import date
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from c_distances import build_distribution, render_markdown, resolve_target_id  # noqa: E402
+
+
+def parse_sql_tuples(values):
+    """Yield each (...) tuple in a MySQL-dump VALUES string as a list of field
+    strings. Quoted strings are unquoted + unescaped (\\' -> ', \\\\ -> \\);
+    numbers and NULL are returned as their literal text ('NULL')."""
+    i, n = 0, len(values)
+    while i < n:
+        if values[i] != '(':
+            i += 1
+            continue
+        i += 1  # consume '('
+        fields = []
+        while True:
+            while i < n and values[i] in ' \t':
+                i += 1
+            if i < n and values[i] == "'":
+                i += 1
+                buf = []
+                while i < n:
+                    c = values[i]
+                    if c == '\\' and i + 1 < n:
+                        buf.append(values[i + 1])
+                        i += 2
+                        continue
+                    if c == "'":
+                        i += 1
+                        break
+                    buf.append(c)
+                    i += 1
+                fields.append(''.join(buf))
+            else:
+                start = i
+                while i < n and values[i] not in ',)':
+                    i += 1
+                fields.append(values[start:i].strip())
+            if i < n and values[i] == ',':
+                i += 1
+                continue
+            if i < n and values[i] == ')':
+                i += 1
+                break
+            break
+        yield fields
+
+
+def reverse_bfs_edges(conn, target_id, chunk=10000):
+    """Reverse-BFS from target over an edges(src,dst) table (edge src->dst means
+    'src links to dst'). Expanding in-neighbors (src where dst in frontier) outward
+    from the target yields each page's minimum forward distance TO the target."""
+    dist = {target_id: 0}
+    frontier = [target_id]
+    d = 0
+    while frontier:
+        d += 1
+        nxt = []
+        for i in range(0, len(frontier), chunk):
+            batch = frontier[i:i + chunk]
+            qmarks = ",".join(["?"] * len(batch))
+            cur = conn.execute(
+                f"SELECT src FROM edges WHERE dst IN ({qmarks})", batch)
+            for (src,) in cur:
+                if src not in dist:
+                    dist[src] = d
+                    nxt.append(src)
+        frontier = nxt
+    return dist
+
+
+def iter_table_rows(path, table):
+    """Stream a (possibly gzipped) MySQL dump file, yield each VALUES tuple (as a
+    list of field strings) from `INSERT INTO `table` VALUES (...);` statements."""
+    opener = gzip.open if path.endswith(".gz") else open
+    prefix = f"INSERT INTO `{table}` VALUES "
+    with opener(path, "rt", encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            if not line.startswith(prefix):
+                continue
+            yield from parse_sql_tuples(line[len(prefix):])
+
+
+def build_graph(paths, work_db):
+    """Build pages + redirects + edges into a sqlite db from the four dump paths.
+    paths: dict with keys 'page','redirect','linktarget','pagelinks'.
+    Returns the open sqlite connection."""
+    if os.path.exists(work_db):
+        os.remove(work_db)
+    conn = sqlite3.connect(work_db)
+    conn.execute("CREATE TABLE pages (id INTEGER PRIMARY KEY, title TEXT, is_redirect INTEGER)")
+    conn.execute("CREATE TABLE redirects (source_id INTEGER, target_id INTEGER)")
+    conn.execute("CREATE TABLE edges (src INTEGER, dst INTEGER)")
+
+    # Stage 1: pages (ns0) + title->id
+    title_to_id = {}
+    pbatch = []
+    for t in iter_table_rows(paths["page"], "page"):
+        if t[1] != "0":
+            continue
+        pid = int(t[0])
+        title = t[2]
+        pbatch.append((pid, title, int(t[3])))
+        title_to_id[title] = pid
+        if len(pbatch) >= 10000:
+            conn.executemany("INSERT OR IGNORE INTO pages VALUES (?,?,?)", pbatch)
+            pbatch.clear()
+    if pbatch:
+        conn.executemany("INSERT OR IGNORE INTO pages VALUES (?,?,?)", pbatch)
+
+    # Stage 2: redirects (ns0) -> {redirect_page_id: canonical_target_id}
+    redirect_to = {}
+    for t in iter_table_rows(paths["redirect"], "redirect"):
+        if t[1] != "0":
+            continue
+        tgt = title_to_id.get(t[2])
+        if tgt is not None:
+            redirect_to[int(t[0])] = tgt
+    if redirect_to:
+        conn.executemany("INSERT INTO redirects VALUES (?,?)", list(redirect_to.items()))
+
+    # Stage 3: linktarget (ns0) -> {lt_id: canonical dst_id}
+    lt_to_dst = {}
+    for t in iter_table_rows(paths["linktarget"], "linktarget"):
+        if t[1] != "0":
+            continue
+        pid = title_to_id.get(t[2])
+        if pid is None:
+            continue
+        lt_to_dst[int(t[0])] = redirect_to.get(pid, pid)
+
+    title_to_id.clear()  # free the big string dict before the heavy pass
+
+    # Stage 4: pagelinks (ns0 from) -> edges
+    ebatch = []
+    for t in iter_table_rows(paths["pagelinks"], "pagelinks"):
+        if t[1] != "0":
+            continue
+        dst = lt_to_dst.get(int(t[2]))
+        if dst is None:
+            continue
+        src = redirect_to.get(int(t[0]), int(t[0]))
+        if src == dst:
+            continue
+        ebatch.append((src, dst))
+        if len(ebatch) >= 50000:
+            conn.executemany("INSERT INTO edges VALUES (?,?)", ebatch)
+            ebatch.clear()
+    if ebatch:
+        conn.executemany("INSERT INTO edges VALUES (?,?)", ebatch)
+
+    conn.execute("CREATE INDEX ix_edges_dst ON edges(dst)")
+    conn.commit()
+    return conn
+
+
+def build_graph_lowmem(paths, work_db):
+    """Same output as build_graph (pages/redirects/edges) but resolves the title,
+    redirect, and linktarget maps via on-disk sqlite JOINs instead of in-memory
+    dicts. Slower + disk-heavy, but completes at <1 GB free RAM."""
+    if os.path.exists(work_db):
+        os.remove(work_db)
+    conn = sqlite3.connect(work_db)
+    conn.execute("PRAGMA journal_mode=OFF")
+    conn.execute("PRAGMA synchronous=OFF")
+    conn.execute("CREATE TABLE pages (id INTEGER PRIMARY KEY, title TEXT, is_redirect INTEGER)")
+    conn.execute("CREATE TABLE redirects (source_id INTEGER, target_id INTEGER)")
+    conn.execute("CREATE TABLE edges (src INTEGER, dst INTEGER)")
+    conn.execute("CREATE TABLE redir_raw (rd_from INTEGER, rd_title TEXT)")
+    conn.execute("CREATE TABLE lt_raw (lt_id INTEGER, lt_title TEXT)")
+    conn.execute("CREATE TABLE pl_raw (pl_from INTEGER, lt_id INTEGER)")
+
+    def stream_insert(sql, rows, batch=50000):
+        buf = []
+        for row in rows:
+            buf.append(row)
+            if len(buf) >= batch:
+                conn.executemany(sql, buf)
+                buf.clear()
+        if buf:
+            conn.executemany(sql, buf)
+
+    # pages (ns0)
+    stream_insert(
+        "INSERT OR IGNORE INTO pages VALUES (?,?,?)",
+        ((int(t[0]), t[2], int(t[3])) for t in iter_table_rows(paths["page"], "page") if t[1] == "0"))
+    conn.execute("CREATE INDEX pages_title ON pages(title)")
+
+    # redirects (ns0): resolve rd_title -> page id via JOIN
+    stream_insert(
+        "INSERT INTO redir_raw VALUES (?,?)",
+        ((int(t[0]), t[2]) for t in iter_table_rows(paths["redirect"], "redirect") if t[1] == "0"))
+    conn.execute("INSERT INTO redirects(source_id, target_id) "
+                 "SELECT rr.rd_from, p.id FROM redir_raw rr JOIN pages p ON p.title = rr.rd_title")
+    conn.execute("CREATE INDEX redirects_src ON redirects(source_id)")
+
+    # linktarget (ns0) -> lt(lt_id, dst_id), dst redirect-collapsed
+    stream_insert(
+        "INSERT INTO lt_raw VALUES (?,?)",
+        ((int(t[0]), t[2]) for t in iter_table_rows(paths["linktarget"], "linktarget") if t[1] == "0"))
+    conn.execute("CREATE TABLE lt (lt_id INTEGER PRIMARY KEY, dst_id INTEGER)")
+    conn.execute("INSERT OR IGNORE INTO lt(lt_id, dst_id) "
+                 "SELECT l.lt_id, COALESCE(r.target_id, p.id) "
+                 "FROM lt_raw l JOIN pages p ON p.title = l.lt_title "
+                 "LEFT JOIN redirects r ON r.source_id = p.id")
+
+    # pagelinks (ns0 from) -> edges
+    stream_insert(
+        "INSERT INTO pl_raw VALUES (?,?)",
+        ((int(t[0]), int(t[2])) for t in iter_table_rows(paths["pagelinks"], "pagelinks") if t[1] == "0"))
+    conn.execute("INSERT INTO edges(src, dst) "
+                 "SELECT COALESCE(r.target_id, pl.pl_from), lt.dst_id "
+                 "FROM pl_raw pl JOIN lt ON lt.lt_id = pl.lt_id "
+                 "LEFT JOIN redirects r ON r.source_id = pl.pl_from "
+                 "WHERE COALESCE(r.target_id, pl.pl_from) <> lt.dst_id")
+
+    conn.execute("CREATE INDEX ix_edges_dst ON edges(dst)")
+    for tmp in ("redir_raw", "lt_raw", "pl_raw", "lt"):
+        conn.execute(f"DROP TABLE {tmp}")
+    conn.commit()
+    return conn
+
+
+def _write_gz(path, lines):
+    with gzip.open(path, "wt", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+
+
+def _make_synthetic_dumps(d):
+    """Write the 4 tiny gz dump fixtures into dir d; return the paths dict.
+    Graph: A(4)->B(2)->Hitler(1), C(3)->Redir(6 -> Hitler), D(5) isolated; ns1 Talk(7) filtered."""
+    paths = {k: os.path.join(d, f"{k}.sql.gz") for k in ("page", "redirect", "linktarget", "pagelinks")}
+    _write_gz(paths["page"], [
+        "INSERT INTO `page` VALUES (1,0,'Adolf_Hitler',0),(2,0,'B',0),(3,0,'C',0),(4,0,'A',0),(5,0,'D',0),(6,0,'Redir',1),(7,1,'Talk',0);",
+    ])
+    _write_gz(paths["redirect"], [
+        "INSERT INTO `redirect` VALUES (6,0,'Adolf_Hitler','',NULL);",
+    ])
+    _write_gz(paths["linktarget"], [
+        "INSERT INTO `linktarget` VALUES (10,0,'B'),(11,0,'Adolf_Hitler'),(12,0,'Redir'),(13,1,'Talk');",
+    ])
+    _write_gz(paths["pagelinks"], [
+        "INSERT INTO `pagelinks` VALUES (4,0,10),(2,0,11),(3,0,12),(7,1,11),(5,0,13);",
+    ])
+    return paths
+
+
+def _selftest_build():
+    import tempfile
+    d = tempfile.mkdtemp(prefix="sixdeg-dumps-")
+    paths = _make_synthetic_dumps(d)
+    conn = build_graph(paths, os.path.join(d, "graph.sqlite"))
+    assert resolve_target_id(conn, "Adolf_Hitler") == 1
+    dist = reverse_bfs_edges(conn, 1)
+    assert dist == {1: 0, 2: 1, 3: 1, 4: 2}, dist
+    print("  build (iter_table_rows + build_graph) OK")
+
+
+def _selftest_build_lowmem():
+    import tempfile
+    d = tempfile.mkdtemp(prefix="sixdeg-lowmem-")
+    paths = _make_synthetic_dumps(d)
+    conn = build_graph_lowmem(paths, os.path.join(d, "graph.sqlite"))
+    assert resolve_target_id(conn, "Adolf_Hitler") == 1
+    dist = reverse_bfs_edges(conn, 1)
+    assert dist == {1: 0, 2: 1, 3: 1, 4: 2}, dist  # identical graph to the fast path
+    print("  build_lowmem (build_graph_lowmem) OK")
+
+
+def _selftest_bfs_edges():
+    conn = sqlite3.connect(":memory:")
+    conn.execute("CREATE TABLE edges (src INTEGER, dst INTEGER)")
+    # forward edges: A(4)->B(2), B(2)->T(1), C(3)->T(1); D(5) isolated
+    conn.executemany("INSERT INTO edges VALUES (?,?)", [(4, 2), (2, 1), (3, 1)])
+    conn.execute("CREATE INDEX ix ON edges(dst)")
+    dist = reverse_bfs_edges(conn, 1)
+    assert dist == {1: 0, 2: 1, 3: 1, 4: 2}, dist  # D(5) unreachable, absent
+    print("  bfs_edges (reverse_bfs_edges) OK")
+
+
+def _selftest_scanner():
+    values = r"(1,0,'Simple',0),(2,0,'Has, comma',0),(3,0,'O\'Brien',0),(4,0,'Back\\slash',1),(5,0,'',0)"
+    rows = list(parse_sql_tuples(values))
+    assert rows[0] == ['1', '0', 'Simple', '0'], rows[0]
+    assert rows[1] == ['2', '0', 'Has, comma', '0'], rows[1]
+    assert rows[2] == ['3', '0', "O'Brien", '0'], rows[2]
+    assert rows[3] == ['4', '0', 'Back\\slash', '1'], rows[3]  # one literal backslash
+    assert rows[4] == ['5', '0', '', '0'], rows[4]
+    assert len(rows) == 5, len(rows)
+    print("  scanner (parse_sql_tuples) OK")
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="Six Degrees full-graph distance from Wikimedia dumps")
+    ap.add_argument("--dumps-dir", default=".cache/six-degrees/dumps")
+    ap.add_argument("--work-db", default=".cache/six-degrees/dumps/graph.sqlite")
+    ap.add_argument("--target", default="Adolf Hitler")
+    ap.add_argument("--out-dir", default="docs/six-degrees")
+    ap.add_argument("--dump-date", default=date.today().isoformat())
+    ap.add_argument("--top", type=int, default=100)
+    ap.add_argument("--rebuild", action="store_true", help="rebuild graph.sqlite even if present")
+    ap.add_argument("--lowmem", action="store_true",
+                    help="force the on-disk low-memory build (use on a RAM-starved machine)")
+    ap.add_argument("--selftest", action="store_true")
+    args = ap.parse_args(argv)
+
+    if args.selftest:
+        _selftest_scanner()
+        _selftest_bfs_edges()
+        _selftest_build()
+        _selftest_build_lowmem()
+        print("ALL SELFTESTS PASSED")
+        return 0
+
+    paths = {
+        "page": os.path.join(args.dumps_dir, "enwiki-latest-page.sql.gz"),
+        "redirect": os.path.join(args.dumps_dir, "enwiki-latest-redirect.sql.gz"),
+        "linktarget": os.path.join(args.dumps_dir, "enwiki-latest-linktarget.sql.gz"),
+        "pagelinks": os.path.join(args.dumps_dir, "enwiki-latest-pagelinks.sql.gz"),
+    }
+
+    if os.path.exists(args.work_db) and not args.rebuild:
+        print(f"Reusing existing graph: {args.work_db}")
+        conn = sqlite3.connect(args.work_db)
+    else:
+        missing = [p for p in paths.values() if not os.path.exists(p)]
+        if missing:
+            raise SystemExit("Missing dump files (run d-fetch-dumps.mjs first):\n  " + "\n  ".join(missing))
+        if args.lowmem:
+            print("Building graph (low-memory on-disk path)...")
+            conn = build_graph_lowmem(paths, args.work_db)
+        else:
+            print("Building graph from dumps (this is the slow part)...")
+            try:
+                conn = build_graph(paths, args.work_db)
+            except MemoryError:
+                import gc
+                gc.collect()  # finalize the orphaned fast-build connection so the db file can be reused
+                print("MemoryError in fast build — falling back to low-memory on-disk path...")
+                conn = build_graph_lowmem(paths, args.work_db)
+
+    title = args.target.replace(" ", "_")
+    target_id = resolve_target_id(conn, title)
+    total = conn.execute("SELECT COUNT(*) FROM pages WHERE is_redirect = 0").fetchone()[0]
+    edge_count = conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
+    print(f"Target '{args.target}' -> id {target_id}; {total:,} articles, {edge_count:,} edges. Reverse BFS...")
+
+    dist = reverse_bfs_edges(conn, target_id)
+    print(f"Labeled {len(dist):,} reachable nodes. Aggregating...")
+
+    report = build_distribution(dist, total_articles=total, within=6, top=args.top, titles=None)
+    far_ids = [f["id"] for f in report["farthest"]]
+    if far_ids:
+        qmarks = ",".join(["?"] * len(far_ids))
+        idmap = {r[0]: r[1] for r in conn.execute(
+            f"SELECT id, title FROM pages WHERE id IN ({qmarks})", far_ids)}
+        report["farthest"] = [
+            {"title": idmap.get(f["id"], str(f["id"])).replace("_", " "), "dist": f["dist"]}
+            for f in report["farthest"]
+        ]
+
+    meta = {"target": args.target, "dumpDate": args.dump_date, "targetId": target_id}
+    os.makedirs(args.out_dir, exist_ok=True)
+    base = os.path.join(args.out_dir, f"fullgraph-dumps-{args.dump_date}")
+    import json
+    with open(base + ".json", "w", encoding="utf-8") as f:
+        json.dump({**meta, **report}, f, indent=2)
+    with open(base + ".md", "w", encoding="utf-8") as f:
+        f.write(render_markdown(report, meta))
+    print(f"Report: {base}.md  ({report['pctWithinSix']}% of {report['reachable']:,} within 6; max {report['max']})")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

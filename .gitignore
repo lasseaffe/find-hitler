@@ -6,3 +6,4 @@ node_modules/
 
 .superpowers/
 .cache/
+__pycache__/
