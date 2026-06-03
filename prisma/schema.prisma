@@ -92,10 +92,11 @@ model Friendship {
   addresseeId String
   status      String   @default("PENDING")
   createdAt   DateTime @default(now())
-  requester   User     @relation("FriendRequests",   fields: [requesterId], references: [id])
-  addressee   User     @relation("FriendAddressees", fields: [addresseeId], references: [id])
+  requester   User     @relation("FriendRequests",   fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User     @relation("FriendAddressees", fields: [addresseeId], references: [id], onDelete: Cascade)
 
   @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
 }
 
 model FriendCode {
@@ -103,7 +104,7 @@ model FriendCode {
   userId    String   @unique
   code      String   @unique
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model LobbyInvite {
@@ -114,8 +115,10 @@ model LobbyInvite {
   status     String   @default("PENDING")
   createdAt  DateTime @default(now())
   expiresAt  DateTime
-  from       User     @relation("InvitesSent",     fields: [fromUserId], references: [id])
-  to         User     @relation("InvitesReceived", fields: [toUserId],   references: [id])
+  from       User     @relation("InvitesSent",     fields: [fromUserId], references: [id], onDelete: Cascade)
+  to         User     @relation("InvitesReceived", fields: [toUserId],   references: [id], onDelete: Cascade)
+
+  @@index([toUserId])
 }
 
 model FactCheckArticle {
