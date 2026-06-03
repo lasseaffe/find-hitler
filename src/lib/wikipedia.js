@@ -102,3 +102,31 @@ export async function validateWikiTitle(title) {
     return { valid: false }
   }
 }
+
+export async function findStartPageAtDistance(
+  target,
+  minHops,
+  maxHops,
+  {
+    fetchRandomPage = getRandomWikiPage,
+    measureDistance = async (page, tgt) => {
+      const { calculateHpDamage } = await import('./bfsDistance.js')
+      return calculateHpDamage(page, tgt)
+    },
+    timeoutMs = 3000,
+  } = {}
+) {
+  const DAMAGE_PER_HOP = 500
+  const deadline = Date.now() + timeoutMs
+  let lastPage = await fetchRandomPage()
+
+  while (Date.now() < deadline) {
+    const damage = await measureDistance(lastPage, target)
+    const hops = damage / DAMAGE_PER_HOP
+    if (hops >= minHops && hops <= maxHops) return lastPage
+    if (Date.now() >= deadline) break
+    lastPage = await fetchRandomPage()
+  }
+
+  return lastPage // fallback
+}
