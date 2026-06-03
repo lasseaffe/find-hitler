@@ -219,11 +219,73 @@ def _selftest_scanner():
     print("  scanner (parse_sql_tuples) OK")
 
 
-if __name__ == "__main__":
-    if "--selftest" in sys.argv:
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="Six Degrees full-graph distance from Wikimedia dumps")
+    ap.add_argument("--dumps-dir", default=".cache/six-degrees/dumps")
+    ap.add_argument("--work-db", default=".cache/six-degrees/dumps/graph.sqlite")
+    ap.add_argument("--target", default="Adolf Hitler")
+    ap.add_argument("--out-dir", default="docs/six-degrees")
+    ap.add_argument("--dump-date", default=date.today().isoformat())
+    ap.add_argument("--top", type=int, default=100)
+    ap.add_argument("--rebuild", action="store_true", help="rebuild graph.sqlite even if present")
+    ap.add_argument("--selftest", action="store_true")
+    args = ap.parse_args(argv)
+
+    if args.selftest:
         _selftest_scanner()
         _selftest_bfs_edges()
         _selftest_build()
         print("ALL SELFTESTS PASSED")
-        sys.exit(0)
-    raise SystemExit("Not yet runnable; use --selftest (full main added in a later task).")
+        return 0
+
+    paths = {
+        "page": os.path.join(args.dumps_dir, "enwiki-latest-page.sql.gz"),
+        "redirect": os.path.join(args.dumps_dir, "enwiki-latest-redirect.sql.gz"),
+        "linktarget": os.path.join(args.dumps_dir, "enwiki-latest-linktarget.sql.gz"),
+        "pagelinks": os.path.join(args.dumps_dir, "enwiki-latest-pagelinks.sql.gz"),
+    }
+
+    if os.path.exists(args.work_db) and not args.rebuild:
+        print(f"Reusing existing graph: {args.work_db}")
+        conn = sqlite3.connect(args.work_db)
+    else:
+        missing = [p for p in paths.values() if not os.path.exists(p)]
+        if missing:
+            raise SystemExit("Missing dump files (run d-fetch-dumps.mjs first):\n  " + "\n  ".join(missing))
+        print("Building graph from dumps (this is the slow part)...")
+        conn = build_graph(paths, args.work_db)
+
+    title = args.target.replace(" ", "_")
+    target_id = resolve_target_id(conn, title)
+    total = conn.execute("SELECT COUNT(*) FROM pages WHERE is_redirect = 0").fetchone()[0]
+    edge_count = conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
+    print(f"Target '{args.target}' -> id {target_id}; {total:,} articles, {edge_count:,} edges. Reverse BFS...")
+
+    dist = reverse_bfs_edges(conn, target_id)
+    print(f"Labeled {len(dist):,} reachable nodes. Aggregating...")
+
+    report = build_distribution(dist, total_articles=total, within=6, top=args.top, titles=None)
+    far_ids = [f["id"] for f in report["farthest"]]
+    if far_ids:
+        qmarks = ",".join(["?"] * len(far_ids))
+        idmap = {r[0]: r[1] for r in conn.execute(
+            f"SELECT id, title FROM pages WHERE id IN ({qmarks})", far_ids)}
+        report["farthest"] = [
+            {"title": idmap.get(f["id"], str(f["id"])).replace("_", " "), "dist": f["dist"]}
+            for f in report["farthest"]
+        ]
+
+    meta = {"target": args.target, "dumpDate": args.dump_date, "targetId": target_id}
+    os.makedirs(args.out_dir, exist_ok=True)
+    base = os.path.join(args.out_dir, f"fullgraph-dumps-{args.dump_date}")
+    import json
+    with open(base + ".json", "w", encoding="utf-8") as f:
+        json.dump({**meta, **report}, f, indent=2)
+    with open(base + ".md", "w", encoding="utf-8") as f:
+        f.write(render_markdown(report, meta))
+    print(f"Report: {base}.md  ({report['pctWithinSix']}% of {report['reachable']:,} within 6; max {report['max']})")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
