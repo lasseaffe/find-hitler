@@ -14,6 +14,7 @@ const FIXTURE_HTML = `
 
 function makeMockFetch(html, title = 'Brazil') {
   return vi.fn().mockResolvedValue({
+    ok: true,
     json: () => Promise.resolve({
       parse: { title, text: { '*': html } }
     })
@@ -52,11 +53,11 @@ describe('fetchAndSanitizeWiki', () => {
     expect(result.cleanHtml).toContain('href="#"')
   })
 
-  it('strips navbox, infobox, and reflist elements', async () => {
+  it('strips navbox and reflist but keeps the infobox (body-link contract)', async () => {
     const result = await fetchAndSanitizeWiki('Brazil')
     expect(result.cleanHtml).not.toContain('navbox')
-    expect(result.cleanHtml).not.toContain('infobox')
-    expect(result.cleanHtml).not.toContain('reflist')
+    expect(result.cleanHtml).not.toContain('reflist')   // reference-list links are wasted clicks
+    expect(result.cleanHtml).toContain('infobox')        // infobox kept: high-value navigation
   })
 
   it('strips external links but keeps their text', async () => {
