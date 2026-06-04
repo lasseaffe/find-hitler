@@ -279,6 +279,34 @@ def _selftest_build_lowmem():
     print("  build_lowmem (build_graph_lowmem) OK")
 
 
+def filter_articles(conn, dist):
+    """Drop BFS-labeled ids that are not is_redirect=0 articles. Redirect/ghost
+    page-ids can leak into the reverse-BFS via dangling redirects (a redirect
+    page whose target title matched no page stays its own node as an edge src);
+    counting them inflates 'reachable' and makes 'unreachable' go negative.
+    Returns a new {id: dist} restricted to real articles. Memory-bounded (the
+    article filter is a sqlite JOIN, not an in-memory id set)."""
+    conn.execute("DROP TABLE IF EXISTS _dist")
+    conn.execute("CREATE TEMP TABLE _dist (id INTEGER PRIMARY KEY, d INTEGER)")
+    conn.executemany("INSERT OR IGNORE INTO _dist VALUES (?,?)", dist.items())
+    out = {r[0]: r[1] for r in conn.execute(
+        "SELECT _dist.id, _dist.d FROM _dist JOIN pages ON pages.id = _dist.id "
+        "WHERE pages.is_redirect = 0")}
+    conn.execute("DROP TABLE _dist")
+    return out
+
+
+def _selftest_filter_articles():
+    import tempfile
+    d = tempfile.mkdtemp(prefix="sixdeg-filter-")
+    paths = _make_synthetic_dumps(d)
+    conn = build_graph(paths, os.path.join(d, "graph.sqlite"))
+    # 6 = 'Redir' (is_redirect=1) simulates a leaked redirect id in the BFS set
+    filtered = filter_articles(conn, {1: 0, 2: 1, 6: 1})
+    assert filtered == {1: 0, 2: 1}, filtered  # the redirect id (6) is dropped
+    print("  filter_articles OK")
+
+
 def _selftest_bfs_edges():
     conn = sqlite3.connect(":memory:")
     conn.execute("CREATE TABLE edges (src INTEGER, dst INTEGER)")
@@ -321,6 +349,7 @@ def main(argv=None):
         _selftest_bfs_edges()
         _selftest_build()
         _selftest_build_lowmem()
+        _selftest_filter_articles()
         print("ALL SELFTESTS PASSED")
         return 0
 
@@ -358,7 +387,9 @@ def main(argv=None):
     print(f"Target '{args.target}' -> id {target_id}; {total:,} articles, {edge_count:,} edges. Reverse BFS...")
 
     dist = reverse_bfs_edges(conn, target_id)
-    print(f"Labeled {len(dist):,} reachable nodes. Aggregating...")
+    labeled = len(dist)
+    dist = filter_articles(conn, dist)  # drop redirect/ghost ids that leak via dangling redirects
+    print(f"Labeled {labeled:,} nodes; {len(dist):,} are is_redirect=0 articles. Aggregating...")
 
     report = build_distribution(dist, total_articles=total, within=6, top=args.top, titles=None)
     far_ids = [f["id"] for f in report["farthest"]]
