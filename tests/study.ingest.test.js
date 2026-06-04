@@ -79,7 +79,7 @@ describe('ingestUrl', () => {
   it('scrapes content and generates an article via LLM', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      text: () => Promise.resolve('<html><main><article>Long enough content about a topic that we want to study in school this semester.</article></main></html>'),
+      text: () => Promise.resolve('<html><main><article>Long enough content about a topic that we want to study in school this semester. This article contains important information about historical events, key figures, and their contributions to society. Students need to understand these concepts to grasp the broader context of the subject matter being covered in this educational resource.</article></main></html>'),
     })
     const mockLLM = vi.fn().mockResolvedValue('Clean study article text.')
     const result = await ingestUrl('https://example.com/article', { fetch: mockFetch, callLLM: mockLLM })

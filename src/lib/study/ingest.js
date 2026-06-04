@@ -59,7 +59,7 @@ export async function ingestUrl(url, deps = {}) {
   $('nav, footer, script, style, header, aside, [class*="ad"]').remove()
   const raw = ($('article, main, [role="main"], .content, body').first().text())
     .replace(/\s+/g, ' ').trim()
-  if (!raw) throw new Error('Could not extract meaningful content from URL')
+  if (raw.length < 200) throw new Error('Could not extract meaningful content from URL')
   const prompt = `Based on the following source text, write a factual educational study article of 400–600 words covering key concepts, definitions, and facts. Clear prose, no headings, no bullet points.\n\n${raw.slice(0, 8000)}`
   const text = await callLLM(prompt)
   return { text: text.trim(), title: $('title').text().slice(0, 80) || url.slice(0, 80) }
