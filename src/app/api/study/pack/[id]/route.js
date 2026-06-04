@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { auth } from '@/auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export async function GET(_, { params }) {
   try {
@@ -42,13 +42,13 @@ export async function GET(_, { params }) {
     })
 
     if (!pack) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return Response.json({ error: 'Not found' }, { status: 404 })
     }
 
-    return NextResponse.json(pack)
+    return Response.json(pack)
   } catch (error) {
     console.error('GET /api/study/pack/[id] error:', error)
-    return NextResponse.json(
+    return Response.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
     )
@@ -57,19 +57,19 @@ export async function GET(_, { params }) {
 
 export async function PATCH(request, { params }) {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
 
     const pack = await prisma.studyPack.findUnique({
       where: { id: params.id },
     })
 
     if (!pack) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return Response.json({ error: 'Not found' }, { status: 404 })
     }
 
     // Only allow the author to update their pack
     if (pack.authorId && pack.authorId !== session?.user?.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return Response.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const data = await request.json()
@@ -83,10 +83,10 @@ export async function PATCH(request, { params }) {
       data: update,
     })
 
-    return NextResponse.json(updated)
+    return Response.json(updated)
   } catch (error) {
     console.error('PATCH /api/study/pack/[id] error:', error)
-    return NextResponse.json(
+    return Response.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
     )

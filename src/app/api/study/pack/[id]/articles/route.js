@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
 // PATCH: Reorder articles in a pack
@@ -8,7 +7,7 @@ export async function PATCH(request, { params }) {
     const { order } = await request.json()
 
     if (!Array.isArray(order)) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'order must be an array' },
         { status: 400 }
       )
@@ -23,10 +22,10 @@ export async function PATCH(request, { params }) {
       )
     )
 
-    return NextResponse.json({ ok: true })
+    return Response.json({ ok: true })
   } catch (error) {
     console.error('PATCH /api/study/pack/[id]/articles error:', error)
-    return NextResponse.json(
+    return Response.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
     )
@@ -43,10 +42,10 @@ export async function DELETE(request, { params }) {
       where: { packId_articleId: { packId: params.id, articleId } },
     })
 
-    return NextResponse.json({ ok: true })
+    return Response.json({ ok: true })
   } catch (error) {
     console.error('DELETE /api/study/pack/[id]/articles error:', error)
-    return NextResponse.json(
+    return Response.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
     )
