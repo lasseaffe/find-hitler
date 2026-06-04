@@ -55,6 +55,9 @@ model User {
   lastPlayedAt  DateTime?
   bests         Json      @default("{}")
   badges        String[]  @default([])
+  username      String?
+  avatarEmoji   String    @default("✕")
+  avatarColor   String    @default("#cc2200")
   accounts      Account[]
   sessions      Session[]
   matches                Match[]
@@ -64,6 +67,9 @@ model User {
   lobbyInvitesSent       LobbyInvite[] @relation("InvitesSent")
   lobbyInvitesReceived   LobbyInvite[] @relation("InvitesReceived")
   createdAt              DateTime      @default(now())
+  studyPacks     StudyPack[]    @relation("StudyPackAuthor")
+  studySessions  StudySession[] @relation("StudySessionUser")
+  packRatings    PackRating[]   @relation("PackRatingUser")
 }
 
 model Match {
@@ -135,6 +141,11 @@ model FactCheckArticle {
   status      String    @default("pending")
   createdAt   DateTime  @default(now())
   approvedAt  DateTime?
+  grade         String?
+  curriculum    String?
+  generatedFrom String?
+  sourceFile    String?
+  studyPacks    StudyPackArticle[]
 }
 
 model Challenge {
@@ -179,4 +190,76 @@ model PageDistance {
 
   @@unique([startTitle, target])
   @@index([target, minClicks])
+}
+
+model StudyPack {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  subject     String
+  grade       String
+  curriculum  String?
+  authorId    String?
+  author      User?    @relation("StudyPackAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  status      String   @default("draft")
+  source      String   @default("ai")
+  playCount   Int      @default(0)
+  avgRating   Float?
+  articles    StudyPackArticle[]
+  sessions    StudySession[]
+  ratings     PackRating[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model StudyPackArticle {
+  packId    String
+  articleId String
+  order     Int       @default(0)
+  pack      StudyPack        @relation(fields: [packId],    references: [id], onDelete: Cascade)
+  article   FactCheckArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([packId, articleId])
+  @@index([packId, order])
+}
+
+model StudySession {
+  id                String        @id @default(cuid())
+  userId            String
+  packId            String
+  difficulty        String        @default("medium")
+  articlesCompleted Int           @default(0)
+  totalScore        Int           @default(0)
+  avgAccuracy       Float         @default(0)
+  user              User          @relation("StudySessionUser", fields: [userId], references: [id], onDelete: Cascade)
+  pack              StudyPack     @relation(fields: [packId],   references: [id], onDelete: Cascade)
+  results           StudyResult[]
+  startedAt         DateTime      @default(now())
+  lastPlayedAt      DateTime      @default(now())
+  completedAt       DateTime?
+}
+
+model StudyResult {
+  id           String       @id @default(cuid())
+  sessionId    String
+  articleId    String
+  score        Int
+  correctCount Int
+  wrongCount   Int
+  timeTaken    Int
+  session      StudySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  completedAt  DateTime     @default(now())
+}
+
+model PackRating {
+  id        String    @id @default(cuid())
+  packId    String
+  userId    String
+  rating    Int
+  comment   String?   @db.Text
+  pack      StudyPack @relation(fields: [packId], references: [id], onDelete: Cascade)
+  user      User      @relation("PackRatingUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@unique([packId, userId])
 }
