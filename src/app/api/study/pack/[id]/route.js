@@ -1,6 +1,5 @@
+import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export async function GET(_, { params }) {
   try {
@@ -57,7 +56,7 @@ export async function GET(_, { params }) {
 
 export async function PATCH(request, { params }) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
 
     const pack = await prisma.studyPack.findUnique({
       where: { id: params.id },

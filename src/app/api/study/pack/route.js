@@ -1,10 +1,9 @@
+import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { name, description, subject, grade, curriculum, status = 'draft' } = await request.json()
 
     if (!name || !subject || !grade) {

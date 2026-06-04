@@ -1,11 +1,10 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import prisma from '@/lib/db'
+import { auth } from '@/auth'
+import { prisma } from '@/lib/db'
 import { detectIngestType, ingestWiki, ingestPaste, ingestAiGen, ingestUrl } from '@/lib/study/ingest'
 import { tamperPlainText } from '@/lib/study/tamper'
 
 export async function POST(request) {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
 
   const contentType = request.headers.get('content-type') ?? ''
   let input = {}
