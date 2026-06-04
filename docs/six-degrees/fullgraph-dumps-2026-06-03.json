@@ -3,13 +3,13 @@
   "dumpDate": "2026-06-03",
   "targetId": 2731583,
   "totalArticles": 7189852,
-  "reachable": 7204159,
-  "unreachable": -14308,
+  "reachable": 7187685,
+  "unreachable": 2166,
   "histogram": {
+    "2": 2276160,
+    "3": 4819554,
     "1": 14632,
-    "2": 2276161,
-    "3": 4821785,
-    "4": 91574,
+    "4": 77332,
     "5": 7
   },
   "pctWithinSix": 100.0,
@@ -22,7 +22,7 @@
       "dist": 5
     },
     {
-      "title": "Pine River, Quebec",
+      "title": "Gisvan",
       "dist": 5
     },
     {
@@ -30,11 +30,11 @@
       "dist": 5
     },
     {
-      "title": "Gisvan",
+      "title": "Operating capacity",
       "dist": 5
     },
     {
-      "title": "Operating capacity",
+      "title": "Pine River, Quebec",
       "dist": 5
     },
     {
@@ -46,375 +46,375 @@
       "dist": 5
     },
     {
-      "title": "Acidus",
+      "title": "Atomic semantics",
       "dist": 4
     },
     {
-      "title": "Atomic value",
+      "title": "Arene (disambiguation)",
       "dist": 4
     },
     {
-      "title": "Area function",
+      "title": "Context-sensitive",
       "dist": 4
     },
     {
-      "title": "Invariance theorem",
+      "title": "Flageolet (disambiguation)",
       "dist": 4
     },
     {
-      "title": "Incompressible string",
+      "title": "Garbage collection (disambiguation)",
       "dist": 4
     },
     {
-      "title": "Enveloping algebra",
+      "title": "Himalia",
       "dist": 4
     },
     {
-      "title": "Total ionic strength adjustment buffer",
+      "title": "Kilobaud",
       "dist": 4
     },
     {
-      "title": "Pamela Manzi",
+      "title": "Lowball",
       "dist": 4
     },
     {
-      "title": "Diazoalkane 1,3-dipolar cycloaddition",
+      "title": "Preprocessing",
       "dist": 4
     },
     {
-      "title": "C3H4",
+      "title": "Statistical assembly",
       "dist": 4
     },
     {
-      "title": "Polymethine",
+      "title": "Software package",
       "dist": 4
     },
     {
-      "title": "C11H22",
+      "title": "Overhand",
       "dist": 4
     },
     {
-      "title": "C13H26",
+      "title": "Jack O'Neill (disambiguation)",
       "dist": 4
     },
     {
-      "title": "C14H28",
+      "title": "Positive semidefinite",
       "dist": 4
     },
     {
-      "title": "Yuheng",
+      "title": "Ground loop",
       "dist": 4
     },
     {
-      "title": "Boolean algebra (disambiguation)",
+      "title": "Network interface",
       "dist": 4
     },
     {
-      "title": "Boolean-valued",
+      "title": "Normalized frequency",
       "dist": 4
     },
     {
-      "title": "Control logic",
+      "title": "Pulsing",
       "dist": 4
     },
     {
-      "title": "Standalone software",
+      "title": "Reference clock",
       "dist": 4
     },
     {
-      "title": "Computer program product",
+      "title": "Shannon's law",
       "dist": 4
     },
     {
-      "title": "GENLN2",
+      "title": "Signal compression",
       "dist": 4
     },
     {
-      "title": "GISSD",
+      "title": "Gosnells",
       "dist": 4
     },
     {
-      "title": "Recuperative multi-tube cooler",
+      "title": "Long Valley, California",
       "dist": 4
     },
     {
-      "title": "Lower flammability limit",
+      "title": "Rauni",
       "dist": 4
     },
     {
-      "title": "Synthetic substance",
+      "title": "Euphorbiales",
       "dist": 4
     },
     {
-      "title": "Michaelis\u2013Menten\u2013Monod kinetics",
+      "title": "Calycerales",
       "dist": 4
     },
     {
-      "title": "Changes in matter",
+      "title": "Rubiales (plant)",
       "dist": 4
     },
     {
-      "title": "Strictly convex",
+      "title": "Plumbaginales",
       "dist": 4
     },
     {
-      "title": "Comet Levy",
+      "title": "Ebenales",
       "dist": 4
     },
     {
-      "title": "Quad-channel architecture",
+      "title": "Bakarganj",
       "dist": 4
     },
     {
-      "title": "Scalable locality",
+      "title": "Patriarch Nicholas I",
       "dist": 4
     },
     {
-      "title": "Dihydropyran",
+      "title": "Ciliata",
       "dist": 4
     },
     {
-      "title": "C6H9NO",
+      "title": "LATA",
       "dist": 4
     },
     {
-      "title": "C16H13O7",
+      "title": "DLL",
       "dist": 4
     },
     {
-      "title": "C17H15O7",
+      "title": "Achan",
       "dist": 4
     },
     {
-      "title": "C18H17O7",
+      "title": "Ceyx (disambiguation)",
       "dist": 4
     },
     {
-      "title": "C19H12O2",
+      "title": "Amphilochus",
       "dist": 4
     },
     {
-      "title": "C23H25O12",
+      "title": "Mephitis",
       "dist": 4
     },
     {
-      "title": "C30H17Cl",
+      "title": "Carpo",
       "dist": 4
     },
     {
-      "title": "Tinaksite",
+      "title": "Ainia",
       "dist": 4
     },
     {
-      "title": "C22H31N3O5",
+      "title": "Aegiale",
       "dist": 4
     },
     {
-      "title": "Olgite",
+      "title": "Abraham Darby",
       "dist": 4
     },
     {
-      "title": "Synchysite",
+      "title": "Leucothoe",
       "dist": 4
     },
     {
-      "title": "C15H12O3",
+      "title": "Pleione",
       "dist": 4
     },
     {
-      "title": "Aspedamite",
+      "title": "Menippe",
       "dist": 4
     },
     {
-      "title": "Dargaite",
+      "title": "Metioche (disambiguation)",
       "dist": 4
     },
     {
-      "title": "Mesaite",
+      "title": "Asterope",
       "dist": 4
     },
     {
-      "title": "Prismatine",
+      "title": "Bianor (disambiguation)",
       "dist": 4
     },
     {
-      "title": "Oenite",
+      "title": "Pholus",
       "dist": 4
     },
     {
-      "title": "Palmierite",
+      "title": "Erytus",
       "dist": 4
     },
     {
-      "title": "Catapleiite",
+      "title": "Argeus",
       "dist": 4
     },
     {
-      "title": "Tris(2-phenylpyridine)iridium",
+      "title": "Merops",
       "dist": 4
     },
     {
-      "title": "Chernovite-(Y)",
+      "title": "Feronia",
       "dist": 4
     },
     {
-      "title": "C5H5N5",
+      "title": "Rusor",
       "dist": 4
     },
     {
-      "title": "C6H5N3",
+      "title": "Dagda (disambiguation)",
       "dist": 4
     },
     {
-      "title": "C24H40O5",
+      "title": "Bebhionn",
       "dist": 4
     },
     {
-      "title": "C4H4N2O2",
+      "title": "Ethne",
       "dist": 4
     },
     {
-      "title": "C5H5N5O",
+      "title": "Gangleri",
       "dist": 4
     },
     {
-      "title": "C5H12",
+      "title": "Adele Goldberg",
       "dist": 4
     },
     {
-      "title": "C10H8",
+      "title": "New York Minute",
       "dist": 4
     },
     {
-      "title": "C20H14O4",
+      "title": "Saules",
       "dist": 4
     },
     {
-      "title": "C7H16",
+      "title": "Adja",
       "dist": 4
     },
     {
-      "title": "CH4N2S",
+      "title": "Alom",
       "dist": 4
     },
     {
-      "title": "C2Cl4O",
+      "title": "Interstate 84",
       "dist": 4
     },
     {
-      "title": "C2H3ClO",
+      "title": "Seker",
       "dist": 4
     },
     {
-      "title": "C2H5NO",
+      "title": "Mesti",
       "dist": 4
     },
     {
-      "title": "C2H7NO",
+      "title": "Ament",
       "dist": 4
     },
     {
-      "title": "C3H3NS",
+      "title": "Amenti",
       "dist": 4
     },
     {
-      "title": "C3H4O4",
+      "title": "Hickling",
       "dist": 4
     },
     {
-      "title": "C3H5N",
+      "title": "Ganesa",
       "dist": 4
     },
     {
-      "title": "C3H7NO",
+      "title": "Kemwer",
       "dist": 4
     },
     {
-      "title": "C3H8S2",
+      "title": "Aghora",
       "dist": 4
     },
     {
-      "title": "C4H4",
+      "title": "Anumati",
       "dist": 4
     },
     {
-      "title": "C4H4N2",
+      "title": "Diophantine",
       "dist": 4
     },
     {
-      "title": "C4H4O",
+      "title": "This Broken Heart",
       "dist": 4
     },
     {
-      "title": "C4H6O3",
+      "title": "Elbow Lake, Minnesota",
       "dist": 4
     },
     {
-      "title": "C4H6O4",
+      "title": "Hadamard product",
       "dist": 4
     },
     {
-      "title": "C4H9NO",
+      "title": "Versioning",
       "dist": 4
     },
     {
-      "title": "C4H11NO2",
+      "title": "Incidence",
       "dist": 4
     },
     {
-      "title": "C4H10N2",
+      "title": "Crystal Lake, Florida",
       "dist": 4
     },
     {
-      "title": "C5H10O5",
+      "title": "High Point, Florida",
       "dist": 4
     },
     {
-      "title": "C5H4N4O",
+      "title": "Pine Ridge, Florida",
       "dist": 4
     },
     {
-      "title": "C5H7N3O2",
+      "title": "Windsor, Illinois",
       "dist": 4
     },
     {
-      "title": "C5H8O",
+      "title": "Georgetown, Indiana",
       "dist": 4
     },
     {
-      "title": "C5H8O4",
+      "title": "Milford, Indiana",
       "dist": 4
     },
     {
-      "title": "C5H9NO",
+      "title": "Westwood, Kentucky",
       "dist": 4
     },
     {
-      "title": "C5H9NO3",
+      "title": "Woodland, Maine",
       "dist": 4
     },
     {
-      "title": "C5H9N3",
+      "title": "Arcadia Township, Michigan",
       "dist": 4
     },
     {
-      "title": "C5H10O4",
+      "title": "Au Sable Township, Michigan",
       "dist": 4
     },
     {
-      "title": "C5H11N",
+      "title": "Austin Township, Michigan",
       "dist": 4
     },
     {
-      "title": "C6H4",
+      "title": "Baldwin Township, Michigan",
       "dist": 4
     },
     {
-      "title": "C6H6O2",
+      "title": "Bear Lake Township, Michigan",
       "dist": 4
     },
     {
-      "title": "C6H6S",
+      "title": "Bedford Township, Michigan",
       "dist": 4
     }
   ]
