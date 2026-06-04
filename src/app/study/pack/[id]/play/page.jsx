@@ -66,18 +66,24 @@ export default function StudyPlayPage({ params }) {
     const res = await fetch('/api/fact-checker/accuse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ articleId: article.id, fcId: payload.fcId, label: payload.label }),
+      body: JSON.stringify({
+        articleId: article.id,
+        fcId: payload.fcId,
+        selection: payload.selection,
+        foundSoFar: accusations.filter(a => a.correct && a.fcId).map(a => a.fcId),
+      }),
     })
     const data = await res.json()
     const newAccusations = [...accusations, { ...payload, ...data }]
     setAccusations(newAccusations)
     setScore(prev => prev + (data.delta ?? 0))
 
-    if (data.complete) {
+    if (data.allFound) {
       setDone(true)
       const timeTaken = Math.round((Date.now() - startTimeRef.current) / 1000)
       const correct = newAccusations.filter(a => a.correct).length
       const wrong = newAccusations.filter(a => !a.correct).length
+      const finalScore = score + (data.delta ?? 0)
       const allMistakes = article.mistakes ?? []
       const foundIds = new Set(newAccusations.filter(a => a.correct).map(a => a.fcId))
       const missedMistakes = allMistakes.filter(m => !foundIds.has(m.fcId))
@@ -87,7 +93,7 @@ export default function StudyPlayPage({ params }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           articleId: article.id,
-          score: data.finalScore ?? score,
+          score: finalScore,
           correctCount: correct,
           wrongCount: wrong,
           timeTaken,
@@ -95,8 +101,8 @@ export default function StudyPlayPage({ params }) {
         }),
       })
 
-      setTotalScore(prev => prev + (data.finalScore ?? score))
-      setOverlay({ score: data.finalScore ?? score, correctCount: correct, wrongCount: wrong, missedMistakes })
+      setTotalScore(prev => prev + finalScore)
+      setOverlay({ score: finalScore, correctCount: correct, wrongCount: wrong, missedMistakes })
     }
   }
 
@@ -110,7 +116,6 @@ export default function StudyPlayPage({ params }) {
     setOverlay(null)
     setArticleIndex(nextIndex)
     loadArticle(articles[nextIndex].article)
-    setLoading(true)
   }
 
   if (loading) {
@@ -144,11 +149,11 @@ export default function StudyPlayPage({ params }) {
             difficulty={difficulty}
           />
           <FactCheckerArticle
-            article={article}
+            html={article.tampered}
+            title={article.title}
             difficulty={difficulty}
             onAccuse={handleAccuse}
-            accusations={accusations}
-            done={done}
+            accused={accusations}
           />
         </>
       )}

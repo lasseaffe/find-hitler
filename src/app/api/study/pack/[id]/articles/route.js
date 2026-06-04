@@ -1,9 +1,13 @@
+import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 
 // PATCH: Reorder articles in a pack
 // Body: { order: ['articleId1', 'articleId2', ...] }
 export async function PATCH(request, { params }) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) return Response.json({ error: 'Unauthenticated' }, { status: 401 })
+
     const { order } = await request.json()
 
     if (!Array.isArray(order)) {
@@ -36,6 +40,9 @@ export async function PATCH(request, { params }) {
 // Body: { articleId }
 export async function DELETE(request, { params }) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) return Response.json({ error: 'Unauthenticated' }, { status: 401 })
+
     const { articleId } = await request.json()
 
     await prisma.studyPackArticle.delete({

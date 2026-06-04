@@ -66,8 +66,12 @@ export async function PATCH(request, { params }) {
       return Response.json({ error: 'Not found' }, { status: 404 })
     }
 
+    if (!session?.user?.id) {
+      return Response.json({ error: 'Unauthenticated' }, { status: 401 })
+    }
+
     // Only allow the author to update their pack
-    if (pack.authorId && pack.authorId !== session?.user?.id) {
+    if (pack.authorId && pack.authorId !== session.user.id) {
       return Response.json({ error: 'Forbidden' }, { status: 403 })
     }
 
