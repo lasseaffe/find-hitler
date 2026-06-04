@@ -136,8 +136,16 @@ import { buildTamperPrompt, parseTamperJson } from '../src/lib/llm.js'
 
 import { generateTamperedArticle, MISTAKE_COUNTS } from '../src/lib/factCheckerGen.js'
 
+// Fixture must exceed MIN_ARTICLE_CHARS (600) so generateTamperedArticle doesn't skip it.
 const FAKE_WIKI = async () => ({
-  cleanHtml: '<p>Born in 1889 in Braunau. Served as a corporal in the army.</p>',
+  cleanHtml: '<p>Born in 1889 in Braunau am Inn, Austria-Hungary. He was the fourth of six children ' +
+    'of Alois Hitler and Klara Pölzl. During World War I, Hitler served in the Bavarian Army and was ' +
+    'wounded twice. He served as a corporal, receiving the Iron Cross Second Class in 1914. He rose to ' +
+    'power as leader of the National Socialist German Workers Party, becoming Chancellor of Germany in ' +
+    '1933 and Führer in 1934. On 30 April 1945, Hitler died by suicide in his Führerbunker in Berlin as ' +
+    'Allied forces closed in. His antisemitic policies led to the Holocaust, the genocide of six million ' +
+    'Jews and millions of others. He invaded Poland in 1939, starting World War II in Europe, a conflict ' +
+    'that caused tens of millions of deaths and massive destruction across the continent.</p>',
   title: 'Adolf Hitler',
   validLinks: [],
 })

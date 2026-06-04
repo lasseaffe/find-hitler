@@ -20,6 +20,9 @@ const count = parseInt(arg('count', '5'), 10)
 const difficulty = arg('difficulty', 'medium')
 const category = arg('category', 'history')
 const subjectsFile = arg('subjects', null)
+// Pause between articles to stay within free-tier per-minute rate limits (e.g. Gemini: ~10 req/min).
+// Override with FC_ARTICLE_DELAY_MS env var; default 15s is conservative for Gemini free tier.
+const articleDelayMs = Number(process.env.FC_ARTICLE_DELAY_MS ?? 15000)
 
 const subjects = subjectsFile
   ? readFileSync(subjectsFile, 'utf8').split('\n').map(s => s.trim()).filter(Boolean)
@@ -29,7 +32,13 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 const db = new PrismaClient({ adapter })
 
 let created = 0, failed = 0
-for (const subject of subjects.slice(0, subjectsFile ? subjects.length : count)) {
+const list = subjects.slice(0, subjectsFile ? subjects.length : count)
+for (let i = 0; i < list.length; i++) {
+  const subject = list[i]
+  if (i > 0 && articleDelayMs > 0) {
+    process.stdout.write(`  (waiting ${articleDelayMs / 1000}s between articles…)\n`)
+    await new Promise(r => setTimeout(r, articleDelayMs))
+  }
   try {
     const draft = await generateTamperedArticle(subject, difficulty, category)
     await db.factCheckArticle.create({ data: draft })
