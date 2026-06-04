@@ -135,3 +135,34 @@ export async function callTamperLLM(plain, mistakeCount, decoyCount) {
     throw err
   }
 }
+
+/**
+ * General-purpose text generation using the same LLM endpoint as tampering.
+ * Returns plain text (not JSON). Uses the same BASE_URL / MODEL / API_KEY env vars.
+ */
+export async function callGenerateLLM(prompt, deps = {}) {
+  const baseUrl = deps.baseUrl ?? BASE_URL
+  const model   = deps.model   ?? MODEL
+  const apiKey  = deps.apiKey  ?? API_KEY
+  const headers = { 'Content-Type': 'application/json' }
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`
+
+  const body = JSON.stringify({
+    model,
+    max_tokens: MAX_TOKENS,
+    temperature: 0.7,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST', headers, body,
+    dispatcher: llmDispatcher,
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  })
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new Error(`callGenerateLLM failed (${res.status}): ${txt.slice(0, 200)}`)
+  }
+  const data = await res.json()
+  return data?.choices?.[0]?.message?.content ?? ''
+}
