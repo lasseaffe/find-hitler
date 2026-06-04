@@ -1,0 +1,421 @@
+{
+  "target": "Adolf Hitler",
+  "dumpDate": "2026-06-03",
+  "targetId": 2731583,
+  "totalArticles": 7189852,
+  "reachable": 7187685,
+  "unreachable": 2166,
+  "histogram": {
+    "2": 2276160,
+    "3": 4819554,
+    "1": 14632,
+    "4": 77332,
+    "5": 7
+  },
+  "pctWithinSix": 100.0,
+  "mean": 2.69,
+  "median": 3,
+  "max": 5,
+  "farthest": [
+    {
+      "title": "Zabnik",
+      "dist": 5
+    },
+    {
+      "title": "Gisvan",
+      "dist": 5
+    },
+    {
+      "title": "Golam Kabud",
+      "dist": 5
+    },
+    {
+      "title": "Operating capacity",
+      "dist": 5
+    },
+    {
+      "title": "Pine River, Quebec",
+      "dist": 5
+    },
+    {
+      "title": "Pukekohe shooting",
+      "dist": 5
+    },
+    {
+      "title": "Building Bridges with Music",
+      "dist": 5
+    },
+    {
+      "title": "Atomic semantics",
+      "dist": 4
+    },
+    {
+      "title": "Arene (disambiguation)",
+      "dist": 4
+    },
+    {
+      "title": "Context-sensitive",
+      "dist": 4
+    },
+    {
+      "title": "Flageolet (disambiguation)",
+      "dist": 4
+    },
+    {
+      "title": "Garbage collection (disambiguation)",
+      "dist": 4
+    },
+    {
+      "title": "Himalia",
+      "dist": 4
+    },
+    {
+      "title": "Kilobaud",
+      "dist": 4
+    },
+    {
+      "title": "Lowball",
+      "dist": 4
+    },
+    {
+      "title": "Preprocessing",
+      "dist": 4
+    },
+    {
+      "title": "Statistical assembly",
+      "dist": 4
+    },
+    {
+      "title": "Software package",
+      "dist": 4
+    },
+    {
+      "title": "Overhand",
+      "dist": 4
+    },
+    {
+      "title": "Jack O'Neill (disambiguation)",
+      "dist": 4
+    },
+    {
+      "title": "Positive semidefinite",
+      "dist": 4
+    },
+    {
+      "title": "Ground loop",
+      "dist": 4
+    },
+    {
+      "title": "Network interface",
+      "dist": 4
+    },
+    {
+      "title": "Normalized frequency",
+      "dist": 4
+    },
+    {
+      "title": "Pulsing",
+      "dist": 4
+    },
+    {
+      "title": "Reference clock",
+      "dist": 4
+    },
+    {
+      "title": "Shannon's law",
+      "dist": 4
+    },
+    {
+      "title": "Signal compression",
+      "dist": 4
+    },
+    {
+      "title": "Gosnells",
+      "dist": 4
+    },
+    {
+      "title": "Long Valley, California",
+      "dist": 4
+    },
+    {
+      "title": "Rauni",
+      "dist": 4
+    },
+    {
+      "title": "Euphorbiales",
+      "dist": 4
+    },
+    {
+      "title": "Calycerales",
+      "dist": 4
+    },
+    {
+      "title": "Rubiales (plant)",
+      "dist": 4
+    },
+    {
+      "title": "Plumbaginales",
+      "dist": 4
+    },
+    {
+      "title": "Ebenales",
+      "dist": 4
+    },
+    {
+      "title": "Bakarganj",
+      "dist": 4
+    },
+    {
+      "title": "Patriarch Nicholas I",
+      "dist": 4
+    },
+    {
+      "title": "Ciliata",
+      "dist": 4
+    },
+    {
+      "title": "LATA",
+      "dist": 4
+    },
+    {
+      "title": "DLL",
+      "dist": 4
+    },
+    {
+      "title": "Achan",
+      "dist": 4
+    },
+    {
+      "title": "Ceyx (disambiguation)",
+      "dist": 4
+    },
+    {
+      "title": "Amphilochus",
+      "dist": 4
+    },
+    {
+      "title": "Mephitis",
+      "dist": 4
+    },
+    {
+      "title": "Carpo",
+      "dist": 4
+    },
+    {
+      "title": "Ainia",
+      "dist": 4
+    },
+    {
+      "title": "Aegiale",
+      "dist": 4
+    },
+    {
+      "title": "Abraham Darby",
+      "dist": 4
+    },
+    {
+      "title": "Leucothoe",
+      "dist": 4
+    },
+    {
+      "title": "Pleione",
+      "dist": 4
+    },
+    {
+      "title": "Menippe",
+      "dist": 4
+    },
+    {
+      "title": "Metioche (disambiguation)",
+      "dist": 4
+    },
+    {
+      "title": "Asterope",
+      "dist": 4
+    },
+    {
+      "title": "Bianor (disambiguation)",
+      "dist": 4
+    },
+    {
+      "title": "Pholus",
+      "dist": 4
+    },
+    {
+      "title": "Erytus",
+      "dist": 4
+    },
+    {
+      "title": "Argeus",
+      "dist": 4
+    },
+    {
+      "title": "Merops",
+      "dist": 4
+    },
+    {
+      "title": "Feronia",
+      "dist": 4
+    },
+    {
+      "title": "Rusor",
+      "dist": 4
+    },
+    {
+      "title": "Dagda (disambiguation)",
+      "dist": 4
+    },
+    {
+      "title": "Bebhionn",
+      "dist": 4
+    },
+    {
+      "title": "Ethne",
+      "dist": 4
+    },
+    {
+      "title": "Gangleri",
+      "dist": 4
+    },
+    {
+      "title": "Adele Goldberg",
+      "dist": 4
+    },
+    {
+      "title": "New York Minute",
+      "dist": 4
+    },
+    {
+      "title": "Saules",
+      "dist": 4
+    },
+    {
+      "title": "Adja",
+      "dist": 4
+    },
+    {
+      "title": "Alom",
+      "dist": 4
+    },
+    {
+      "title": "Interstate 84",
+      "dist": 4
+    },
+    {
+      "title": "Seker",
+      "dist": 4
+    },
+    {
+      "title": "Mesti",
+      "dist": 4
+    },
+    {
+      "title": "Ament",
+      "dist": 4
+    },
+    {
+      "title": "Amenti",
+      "dist": 4
+    },
+    {
+      "title": "Hickling",
+      "dist": 4
+    },
+    {
+      "title": "Ganesa",
+      "dist": 4
+    },
+    {
+      "title": "Kemwer",
+      "dist": 4
+    },
+    {
+      "title": "Aghora",
+      "dist": 4
+    },
+    {
+      "title": "Anumati",
+      "dist": 4
+    },
+    {
+      "title": "Diophantine",
+      "dist": 4
+    },
+    {
+      "title": "This Broken Heart",
+      "dist": 4
+    },
+    {
+      "title": "Elbow Lake, Minnesota",
+      "dist": 4
+    },
+    {
+      "title": "Hadamard product",
+      "dist": 4
+    },
+    {
+      "title": "Versioning",
+      "dist": 4
+    },
+    {
+      "title": "Incidence",
+      "dist": 4
+    },
+    {
+      "title": "Crystal Lake, Florida",
+      "dist": 4
+    },
+    {
+      "title": "High Point, Florida",
+      "dist": 4
+    },
+    {
+      "title": "Pine Ridge, Florida",
+      "dist": 4
+    },
+    {
+      "title": "Windsor, Illinois",
+      "dist": 4
+    },
+    {
+      "title": "Georgetown, Indiana",
+      "dist": 4
+    },
+    {
+      "title": "Milford, Indiana",
+      "dist": 4
+    },
+    {
+      "title": "Westwood, Kentucky",
+      "dist": 4
+    },
+    {
+      "title": "Woodland, Maine",
+      "dist": 4
+    },
+    {
+      "title": "Arcadia Township, Michigan",
+      "dist": 4
+    },
+    {
+      "title": "Au Sable Township, Michigan",
+      "dist": 4
+    },
+    {
+      "title": "Austin Township, Michigan",
+      "dist": 4
+    },
+    {
+      "title": "Baldwin Township, Michigan",
+      "dist": 4
+    },
+    {
+      "title": "Bear Lake Township, Michigan",
+      "dist": 4
+    },
+    {
+      "title": "Bedford Township, Michigan",
+      "dist": 4
+    }
+  ]
+}
