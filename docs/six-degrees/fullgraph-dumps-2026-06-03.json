@@ -1,0 +1,421 @@
+{
+  "target": "Adolf Hitler",
+  "dumpDate": "2026-06-03",
+  "targetId": 2731583,
+  "totalArticles": 7189852,
+  "reachable": 7204159,
+  "unreachable": -14308,
+  "histogram": {
+    "1": 14632,
+    "2": 2276161,
+    "3": 4821785,
+    "4": 91574,
+    "5": 7
+  },
+  "pctWithinSix": 100.0,
+  "mean": 2.69,
+  "median": 3,
+  "max": 5,
+  "farthest": [
+    {
+      "title": "Zabnik",
+      "dist": 5
+    },
+    {
+      "title": "Pine River, Quebec",
+      "dist": 5
+    },
+    {
+      "title": "Golam Kabud",
+      "dist": 5
+    },
+    {
+      "title": "Gisvan",
+      "dist": 5
+    },
+    {
+      "title": "Operating capacity",
+      "dist": 5
+    },
+    {
+      "title": "Pukekohe shooting",
+      "dist": 5
+    },
+    {
+      "title": "Building Bridges with Music",
+      "dist": 5
+    },
+    {
+      "title": "Acidus",
+      "dist": 4
+    },
+    {
+      "title": "Atomic value",
+      "dist": 4
+    },
+    {
+      "title": "Area function",
+      "dist": 4
+    },
+    {
+      "title": "Invariance theorem",
+      "dist": 4
+    },
+    {
+      "title": "Incompressible string",
+      "dist": 4
+    },
+    {
+      "title": "Enveloping algebra",
+      "dist": 4
+    },
+    {
+      "title": "Total ionic strength adjustment buffer",
+      "dist": 4
+    },
+    {
+      "title": "Pamela Manzi",
+      "dist": 4
+    },
+    {
+      "title": "Diazoalkane 1,3-dipolar cycloaddition",
+      "dist": 4
+    },
+    {
+      "title": "C3H4",
+      "dist": 4
+    },
+    {
+      "title": "Polymethine",
+      "dist": 4
+    },
+    {
+      "title": "C11H22",
+      "dist": 4
+    },
+    {
+      "title": "C13H26",
+      "dist": 4
+    },
+    {
+      "title": "C14H28",
+      "dist": 4
+    },
+    {
+      "title": "Yuheng",
+      "dist": 4
+    },
+    {
+      "title": "Boolean algebra (disambiguation)",
+      "dist": 4
+    },
+    {
+      "title": "Boolean-valued",
+      "dist": 4
+    },
+    {
+      "title": "Control logic",
+      "dist": 4
+    },
+    {
+      "title": "Standalone software",
+      "dist": 4
+    },
+    {
+      "title": "Computer program product",
+      "dist": 4
+    },
+    {
+      "title": "GENLN2",
+      "dist": 4
+    },
+    {
+      "title": "GISSD",
+      "dist": 4
+    },
+    {
+      "title": "Recuperative multi-tube cooler",
+      "dist": 4
+    },
+    {
+      "title": "Lower flammability limit",
+      "dist": 4
+    },
+    {
+      "title": "Synthetic substance",
+      "dist": 4
+    },
+    {
+      "title": "Michaelis\u2013Menten\u2013Monod kinetics",
+      "dist": 4
+    },
+    {
+      "title": "Changes in matter",
+      "dist": 4
+    },
+    {
+      "title": "Strictly convex",
+      "dist": 4
+    },
+    {
+      "title": "Comet Levy",
+      "dist": 4
+    },
+    {
+      "title": "Quad-channel architecture",
+      "dist": 4
+    },
+    {
+      "title": "Scalable locality",
+      "dist": 4
+    },
+    {
+      "title": "Dihydropyran",
+      "dist": 4
+    },
+    {
+      "title": "C6H9NO",
+      "dist": 4
+    },
+    {
+      "title": "C16H13O7",
+      "dist": 4
+    },
+    {
+      "title": "C17H15O7",
+      "dist": 4
+    },
+    {
+      "title": "C18H17O7",
+      "dist": 4
+    },
+    {
+      "title": "C19H12O2",
+      "dist": 4
+    },
+    {
+      "title": "C23H25O12",
+      "dist": 4
+    },
+    {
+      "title": "C30H17Cl",
+      "dist": 4
+    },
+    {
+      "title": "Tinaksite",
+      "dist": 4
+    },
+    {
+      "title": "C22H31N3O5",
+      "dist": 4
+    },
+    {
+      "title": "Olgite",
+      "dist": 4
+    },
+    {
+      "title": "Synchysite",
+      "dist": 4
+    },
+    {
+      "title": "C15H12O3",
+      "dist": 4
+    },
+    {
+      "title": "Aspedamite",
+      "dist": 4
+    },
+    {
+      "title": "Dargaite",
+      "dist": 4
+    },
+    {
+      "title": "Mesaite",
+      "dist": 4
+    },
+    {
+      "title": "Prismatine",
+      "dist": 4
+    },
+    {
+      "title": "Oenite",
+      "dist": 4
+    },
+    {
+      "title": "Palmierite",
+      "dist": 4
+    },
+    {
+      "title": "Catapleiite",
+      "dist": 4
+    },
+    {
+      "title": "Tris(2-phenylpyridine)iridium",
+      "dist": 4
+    },
+    {
+      "title": "Chernovite-(Y)",
+      "dist": 4
+    },
+    {
+      "title": "C5H5N5",
+      "dist": 4
+    },
+    {
+      "title": "C6H5N3",
+      "dist": 4
+    },
+    {
+      "title": "C24H40O5",
+      "dist": 4
+    },
+    {
+      "title": "C4H4N2O2",
+      "dist": 4
+    },
+    {
+      "title": "C5H5N5O",
+      "dist": 4
+    },
+    {
+      "title": "C5H12",
+      "dist": 4
+    },
+    {
+      "title": "C10H8",
+      "dist": 4
+    },
+    {
+      "title": "C20H14O4",
+      "dist": 4
+    },
+    {
+      "title": "C7H16",
+      "dist": 4
+    },
+    {
+      "title": "CH4N2S",
+      "dist": 4
+    },
+    {
+      "title": "C2Cl4O",
+      "dist": 4
+    },
+    {
+      "title": "C2H3ClO",
+      "dist": 4
+    },
+    {
+      "title": "C2H5NO",
+      "dist": 4
+    },
+    {
+      "title": "C2H7NO",
+      "dist": 4
+    },
+    {
+      "title": "C3H3NS",
+      "dist": 4
+    },
+    {
+      "title": "C3H4O4",
+      "dist": 4
+    },
+    {
+      "title": "C3H5N",
+      "dist": 4
+    },
+    {
+      "title": "C3H7NO",
+      "dist": 4
+    },
+    {
+      "title": "C3H8S2",
+      "dist": 4
+    },
+    {
+      "title": "C4H4",
+      "dist": 4
+    },
+    {
+      "title": "C4H4N2",
+      "dist": 4
+    },
+    {
+      "title": "C4H4O",
+      "dist": 4
+    },
+    {
+      "title": "C4H6O3",
+      "dist": 4
+    },
+    {
+      "title": "C4H6O4",
+      "dist": 4
+    },
+    {
+      "title": "C4H9NO",
+      "dist": 4
+    },
+    {
+      "title": "C4H11NO2",
+      "dist": 4
+    },
+    {
+      "title": "C4H10N2",
+      "dist": 4
+    },
+    {
+      "title": "C5H10O5",
+      "dist": 4
+    },
+    {
+      "title": "C5H4N4O",
+      "dist": 4
+    },
+    {
+      "title": "C5H7N3O2",
+      "dist": 4
+    },
+    {
+      "title": "C5H8O",
+      "dist": 4
+    },
+    {
+      "title": "C5H8O4",
+      "dist": 4
+    },
+    {
+      "title": "C5H9NO",
+      "dist": 4
+    },
+    {
+      "title": "C5H9NO3",
+      "dist": 4
+    },
+    {
+      "title": "C5H9N3",
+      "dist": 4
+    },
+    {
+      "title": "C5H10O4",
+      "dist": 4
+    },
+    {
+      "title": "C5H11N",
+      "dist": 4
+    },
+    {
+      "title": "C6H4",
+      "dist": 4
+    },
+    {
+      "title": "C6H6O2",
+      "dist": 4
+    },
+    {
+      "title": "C6H6S",
+      "dist": 4
+    }
+  ]
+}
